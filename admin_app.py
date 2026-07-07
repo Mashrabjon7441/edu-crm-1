@@ -729,14 +729,35 @@ def bot_webhook(center_id):
     from bot import active_bots
     bot = active_bots.get(center_id)
     if not bot:
+        err_msg = f"Error: Bot for center {center_id} is not loaded in memory (active_bots keys: {list(active_bots.keys())})\n"
+        with open("webhook_errors.log", "a", encoding="utf-8") as f:
+            f.write(err_msg)
         return 'Bot not configured', 404
     try:
         import json
         update = telebot.types.Update.de_json(request.data.decode('utf-8'))
         bot.process_new_updates([update])
     except Exception as e:
-        print(f"Webhook error for center {center_id}: {e}")
+        import traceback
+        err_msg = f"Webhook error for center {center_id}: {e}\n{traceback.format_exc()}\n"
+        print(err_msg)
+        with open("webhook_errors.log", "a", encoding="utf-8") as f:
+            f.write(err_msg)
     return 'OK', 200
+
+@app.route('/superadmin/webhook_logs')
+@login_required
+def view_webhook_logs():
+    if current_user.role != 'superadmin': return redirect(url_for('index'))
+    content = ""
+    if os.path.exists("webhook_errors.log"):
+        with open("webhook_errors.log", "r", encoding="utf-8") as f:
+            content = f.read()
+    else:
+        content = "Hozircha hech qanday xato yozilmagan."
+    
+    # Return a simple raw content or preformatted text page for easy reading
+    return f"<html><body><h3>Webhook Xatolik Jurnali:</h3><pre>{content}</pre><br><a href='/superadmin'>Orqaga Dashboardga</a></body></html>"
 
 # ── Director: Broadcast announcement to all students via Telegram
 @app.route('/director/announce', methods=['POST'])
