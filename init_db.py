@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_URL = f'sqlite:///{os.path.join(BASE_DIR, "crm.db")}'
+DB_URL = os.getenv("DATABASE_URL", f'sqlite:///{os.path.join(BASE_DIR, "crm.db")}')
+if DB_URL.startswith("postgres://"):
+    DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
@@ -17,15 +19,23 @@ def init_db():
     Base.metadata.create_all(engine)
     session = Session()
     
-    # Super Admin
-    if not session.query(Admin).filter_by(username='superadmin').first():
+    # Super Admin with dynamic ENV settings
+    sa_user = os.getenv("SUPERADMIN_USER", "superadmin")
+    sa_pass = os.getenv("SUPERADMIN_PASS", "superadmin123")
+    
+    sa = session.query(Admin).filter_by(role='superadmin').first()
+    if sa:
+        sa.username = sa_user
+        sa.password_hash = generate_password_hash(sa_pass)
+        print(f"Super Admin credentials updated: {sa_user}")
+    else:
         session.add(Admin(
-            username='superadmin',
-            password_hash=generate_password_hash('superadmin123'),
+            username=sa_user,
+            password_hash=generate_password_hash(sa_pass),
             role='superadmin',
             full_name='Super Administrator'
         ))
-        print("Super Admin created: superadmin / superadmin123")
+        print(f"Super Admin created: {sa_user}")
 
     # Default Center 1
     center = session.query(Center).filter_by(name="O'quv Markazi 1").first()
