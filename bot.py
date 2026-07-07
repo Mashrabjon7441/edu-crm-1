@@ -161,7 +161,16 @@ def supervisor_loop():
                     print(f"New bot token found for center: {center.name} (ID: {center.id})")
                     try:
                         bot = make_bot(token, center.id)
-                        t = threading.Thread(target=bot.infinity_polling, daemon=True)
+                        try:
+                            bot.delete_webhook(drop_pending_updates=True)
+                        except Exception:
+                            pass
+                        time.sleep(1)
+                        t = threading.Thread(
+                            target=bot.infinity_polling,
+                            kwargs={"skip_pending": True, "timeout": 30, "long_polling_timeout": 20},
+                            daemon=True
+                        )
                         t.start()
                         active_bot_tokens[token] = t
                     except Exception as e:

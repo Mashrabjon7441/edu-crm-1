@@ -132,7 +132,13 @@ def start_superadmin_bot():
         finally:
             session.close()
 
-    bot.infinity_polling()
+    try:
+        bot.delete_webhook(drop_pending_updates=True)
+    except Exception:
+        pass
+    import time
+    time.sleep(2)
+    bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=20)
 
 def send_superadmin_notification(text):
     if not TOKEN:
