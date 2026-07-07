@@ -39,13 +39,18 @@ def init_db():
 
     # Default Center 1
     center = session.query(Center).filter_by(name="O'quv Markazi 1").first()
+    bot_token = os.getenv("BOT_TOKEN")
     if not center:
-        # Check env for bot token
-        bot_token = os.getenv("BOT_TOKEN", "7892142365:AAHh3j8ESs8ibVqhPk-Wmx5sbpSyYEZDQK0")
+        if not bot_token:
+            bot_token = "7892142365:AAHh3j8ESs8ibVqhPk-Wmx5sbpSyYEZDQK0"
         center = Center(name="O'quv Markazi 1", telegram_bot_token=bot_token)
         session.add(center)
         session.flush()
         print(f"Default Center created: {center.name} (Bot: {bot_token})")
+    else:
+        if bot_token and center.telegram_bot_token != bot_token:
+            center.telegram_bot_token = bot_token
+            print(f"Default Center bot token updated from ENV: {bot_token}")
     
     # Manager for Center 1
     if not session.query(Admin).filter_by(username='manager').first():
