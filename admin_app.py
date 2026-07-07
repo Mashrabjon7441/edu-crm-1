@@ -726,15 +726,31 @@ def notify_new_lead():
 # ── Webhook receiver for per-center Telegram bots (production / RAM-efficient)
 @app.route('/bot_webhook/<int:center_id>', methods=['POST'])
 def bot_webhook(center_id):
-    from bot import active_bots
+    from bot import active_bots, init_webhooks, register_center_webhook
     bot = active_bots.get(center_id)
+
+    # Lazy init: if bot not in memory (e.g. after server restart), re-init it
+    if not bot:
+        try:
+            _app_url = os.getenv('APP_URL', '').strip() or os.getenv('RENDER_EXTERNAL_URL', '').strip()
+            if _app_url:
+                from bot import Session as BotSession
+                from models import Center
+                _s = BotSession()
+                _center = _s.query(Center).filter_by(id=center_id).first()
+                _s.close()
+                if _center:
+                    register_center_webhook(_center, _app_url)
+                    bot = active_bots.get(center_id)
+        except Exception as _e:
+            print(f"Lazy bot init failed for center {center_id}: {_e}")
+
     if not bot:
         err_msg = f"Error: Bot for center {center_id} is not loaded in memory (active_bots keys: {list(active_bots.keys())})\n"
         with open("webhook_errors.log", "a", encoding="utf-8") as f:
             f.write(err_msg)
         return 'Bot not configured', 404
     try:
-        import json
         update = telebot.types.Update.de_json(request.data.decode('utf-8'))
         bot.process_new_updates([update])
     except Exception as e:
@@ -784,11 +800,11 @@ if not APP_URL:
     APP_URL = os.getenv('RENDER_EXTERNAL_URL', '').strip()
 
 if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
-    # PRODUCTION — use webhooks (no polling threads = much less RAM!)
+    # PRODUCTION — use webhooks
     try:
         from bot import init_webhooks, send_payment_reminders
-        t = threading.Thread(target=lambda: (init_webhooks(APP_URL)), daemon=True)
-        t.start()
+        # Run directly (NOT in daemon thread) so active_bots is ready before requests arrive
+        init_webhooks(APP_URL)
         print(f"Telegram bots: WEBHOOK mode → {APP_URL}")
 
         # Schedule daily payment reminders at 09:00
