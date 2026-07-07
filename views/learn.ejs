@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Til Mashg'uloti - Boshlang'ich So'zlar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --dark: #2C3E50;
+            --bg: #1f4037;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--bg) 0%, #99f2c8 100%);
+            color: #333;
+        }
+
+        .header-stats {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .timer {
+            color: var(--danger);
+            font-size: 18px;
+        }
+
+        .score-board {
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .phrase-box {
+            background: #f1f2f6;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px dashed #bdc3c7;
+        }
+
+        .target-phrase {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .uzbek-translation {
+            font-size: 18px;
+            color: #7f8c8d;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-listen {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-speak {
+            background: var(--success);
+            color: white;
+        }
+
+        .feedback {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 15px;
+            min-height: 30px;
+        }
+
+        .correct {
+            color: var(--success);
+        }
+
+        .incorrect {
+            color: var(--danger);
+        }
+
+        #user-speech {
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            color: white;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay h1 {
+            color: #2ecc71;
+            font-size: 40px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header-stats">
+        <div>Ballingiz: <span class="score-board" id="score-val">
+                <%= user.score || 0 %>
+            </span> ⭐</div>
+        <div class="timer">Qolgan vaqt: <span id="time-left"></span></div>
+    </div>
+
+    <div class="container">
+        <h2 id="lesson-title">
+            <%= user.lang==='ja' ? "Yapon Tili 🇯🇵" : "Rus Tili 🇷🇺" %>
+        </h2>
+        <p>Ovozli talaffuzingizni tekshiramiz!</p>
+
+        <div class="phrase-box">
+            <div class="target-phrase" id="target-text">...</div>
+            <div class="uzbek-translation" id="uz-text">...</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-listen" id="listen-btn" onclick="listenPhrase()">🔊 Tinglash</button>
+            <button class="btn-speak" id="speak-btn" onclick="startSpeaking()">🎤 Gapirish</button>
+        </div>
+
+        <div id="user-speech">-</div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+
+    <div class="overlay" id="done-overlay">
+        <h1>Vaqt tugadi! 🎉</h1>
+        <p>Siz bugungi vazifani muvaffaqiyatli bajardingiz.</p>
+        <h2 id="final-score"></h2>
+        <button class="btn-listen" style="margin-top:20px;" onclick="window.location.href='/'">Bosh sahifaga
+            qaytish</button>
+    </div>
+
+    <script>
+        const userTelefon = "<%= user.telefon %>";
+        const userLang = "<%= user.lang %>";
+        let score = parseInt("<%= user.score || 0 %>");
+        let dailyGoalSeconds = parseInt("<%= user.daily_goal %>") * 60;
+        let timerActive = true;
+
+        // Lug'atlar
+        const phrasesRU = [
+            { text: "Привет", uz: "Salom" },
+            { text: "Доброе утро", uz: "Xayrli tong" },
+            { text: "Добрый день", uz: "Xayrli kun" },
+            { text: "Добрый вечер", uz: "Xayrli kech" },
+            { text: "Спокойной ночи", uz: "Xayrli tun" },
+            { text: "Как дела", uz: "Qalaysiz" },
+            { text: "Все отлично", uz: "Hammasi a'lo" },
+            { text: "Меня зовут", uz: "Mening ismim" },
+            { text: "Очень приятно", uz: "Tanishganimdan xursandman" },
+            { text: "Сколько вам лет", uz: "Yoshingiz nechida" },
+            { text: "Я из Узбекистана", uz: "Men O'zbekistonlikman" },
+            { text: "Где вы живете", uz: "Qayerda yashaysiz" },
+            { text: "Я не понимаю", uz: "Men tushunmayapman" },
+            { text: "Вы говорите по английски", uz: "Inglizcha gaplashasizmi" },
+            { text: "Помогите мне", uz: "Menga yordam bering" },
+            { text: "Конечно", uz: "Albatta" },
+            { text: "Сколько это стоит", uz: "Bu qancha turadi" },
+            { text: "Я хочу купить это", uz: "Men shuni sotib olmoqchiman" },
+            { text: "Где находится туалет", uz: "Hojatxona qayerda joylashgan" },
+            { text: "Извините", uz: "Kechirasiz" },
+            { text: "Пожалуйста", uz: "Iltimos" },
+            { text: "Удачи", uz: "Omad" },
+            { text: "Мама", uz: "Ona" },
+            { text: "Папа", uz: "Ota" },
+            { text: "Брат", uz: "Aka / Uka" },
+            { text: "Сестра", uz: "Opa / Singil" },
+            { text: "Один", uz: "Bir" },
+            { text: "Два", uz: "Ikki" },
+            { text: "Три", uz: "Uch" },
+            { text: "Четыре", uz: "To'rt" },
+            { text: "Пять", uz: "Besh" },
+            { text: "Вода", uz: "Suv" },
+            { text: "Хлеб", uz: "Non" },
+            { text: "Вкусно", uz: "Mazzali" },
+            { text: "Я голоден", uz: "Qornim ochdi" },
+            { text: "Красный", uz: "Qizil" },
+            { text: "Белый", uz: "Oq" },
+            { text: "Черный", uz: "Qora" },
+            { text: "Сегодня", uz: "Bugun" },
+            { text: "Завтра", uz: "Erta" },
+            { text: "Вчера", uz: "Kecha" },
+            { text: "Работа", uz: "Ish" },
+            { text: "Учеба", uz: "O'qish" },
+            { text: "Друг", uz: "Do'st" },
+            { text: "Книга", uz: "Kitob" },
+            { text: "Дом", uz: "Uy" },
+            { text: "Я тебя люблю", uz: "Men seni sevaman" },
+            { text: "Да", uz: "Ha" },
+            { text: "Нет", uz: "Yo'q" },
+            { text: "До свидания", uz: "Xayr" }
+        ];
+
+        const phrasesJA = [
+            { text: "こんにちは", uz: "Salom / Xayrli kun" },
+            { text: "おはようございます", uz: "Xayrli tong" },
+            { text: "こんばんは", uz: "Xayrli kech" },
+            { text: "おやすみなさい", uz: "Xayrli tun" },
+            { text: "お元気ですか", uz: "Qalaysiz" },
+            { text: "元気です", uz: "Yaxshi" },
+            { text: "ありがとう", uz: "Rahmat" },
+            { text: "すみません", uz: "Kechirasiz" },
+            { text: "ごめんなさい", uz: "Uzr" },
+            { text: "はい", uz: "Ha" },
+            { text: "いいえ", uz: "Yo'q" },
+            { text: "はじめまして", uz: "Tanishganimdan xursandman" },
+            { text: "おねがいします", uz: "Iltimos" },
+            { text: "わかりません", uz: "Tushunmadim" },
+            { text: "わかります", uz: "Tushundim" },
+            { text: "英語を話せますか", uz: "Inglizcha gaplashasizmi" },
+            { text: "助けてください", uz: "Yordam bering" },
+            { text: "いくらですか", uz: "Qancha turadi" },
+            { text: "これをお願いします", uz: "Shuni iltimos qilaman (Sotib olaman)" },
+            { text: "トイレはどこですか", uz: "Hojatxona qayerda" },
+            { text: "水", uz: "Suv" },
+            { text: "ご飯", uz: "Guruch / Ovqat" },
+            { text: "美味しい", uz: "Mazzali" },
+            { text: "お腹が空きました", uz: "Qornim ochdi" },
+            { text: "家族", uz: "Oila" },
+            { text: "お母さん", uz: "Ona" },
+            { text: "お父さん", uz: "Ota" },
+            { text: "一", uz: "Bir" },
+            { text: "二", uz: "Ikki" },
+            { text: "三", uz: "Uch" },
+            { text: "四", uz: "To'rt" },
+            { text: "五", uz: "Besh" },
+            { text: "赤", uz: "Qizil" },
+            { text: "白", uz: "Oq" },
+            { text: "黒", uz: "Qora" },
+            { text: "今日", uz: "Bugun" },
+            { text: "明日", uz: "Ertaga" },
+            { text: "昨日", uz: "Kecha" },
+            { text: "仕事", uz: "Ish" },
+            { text: "学校", uz: "Maktab" },
+            { text: "友達", uz: "Do'st" },
+            { text: "本", uz: "Kitob" },
+            { text: "家", uz: "Uy" },
+            { text: "犬", uz: "It" },
+            { text: "猫", uz: "Mushuk" },
+            { text: "車", uz: "Moshina" },
+            { text: "お金", uz: "Pul" },
+            { text: "愛してる", uz: "Seni sevaman" },
+            { text: "頑張って", uz: "Omad / Harakat qil" },
+            { text: "さようなら", uz: "Xayr" }
+        ];
+
+        const currentPhrases = (userLang === "ja") ? phrasesJA : phrasesRU;
+        const speechLangCode = (userLang === "ja") ? "ja-JP" : "ru-RU";
+
+        let currentIndex = 0;
+
+        const targetTextEl = document.getElementById('target-text');
+        const uzTextEl = document.getElementById('uz-text');
+        const feedbackEl = document.getElementById('feedback');
+        const speakBtn = document.getElementById('speak-btn');
+        const userSpeechEl = document.getElementById('user-speech');
+        const timeEl = document.getElementById('time-left');
+        const scoreEl = document.getElementById('score-val');
+
+        loadPhrase();
+
+        // Sahifani tark etishni bloklash
+        window.addEventListener('beforeunload', function (e) {
+            if (timerActive) {
+                e.preventDefault();
+                e.returnValue = "Vaqtingiz hali tugamadi! Ketmoqchimisiz?";
+            }
+        });
+
+        const timerInterval = setInterval(() => {
+            if (dailyGoalSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerActive = false;
+                document.getElementById('done-overlay').style.display = 'flex';
+                document.getElementById('final-score').innerText = `Umumiy ball: ${score} ⭐`;
+                return;
+            }
+            dailyGoalSeconds--;
+            let m = Math.floor(dailyGoalSeconds / 60);
+            let s = dailyGoalSeconds % 60;
+            timeEl.innerText = `${m}:${s < 10 ? '0' + s : s}`;
+        }, 1000);
+
+        function loadPhrase() {
+            targetTextEl.innerText = currentPhrases[currentIndex].text;
+            uzTextEl.innerText = currentPhrases[currentIndex].uz;
+            feedbackEl.innerText = "";
+            userSpeechEl.innerText = "-";
+            speakBtn.disabled = false;
+        }
+
+        function listenPhrase() {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(currentPhrases[currentIndex].text);
+                utterance.lang = speechLangCode;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert("Ovoz funksiyasi brauzeringizda ishlamaydi.");
+            }
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = speechLangCode;
+
+            recognition.onstart = function () {
+                speakBtn.innerText = "Eshitilmoqda...";
+                speakBtn.style.background = "#f39c12";
+            };
+
+            recognition.onresult = function (event) {
+                const transcript = event.results[0][0].transcript;
+                userSpeechEl.innerText = 'Siz aytdingiz: "' + transcript + '"';
+                checkAnswer(transcript);
+            };
+
+            recognition.onerror = function (event) {
+                feedbackEl.innerText = "Ovoz aniqlanmadi. Qayta urinib ko'ring.";
+                feedbackEl.className = "feedback incorrect";
+            };
+
+            recognition.onend = function () {
+                speakBtn.innerText = "🎤 Gapirish";
+                speakBtn.style.background = "var(--success)";
+            };
+        }
+
+        function startSpeaking() {
+            if (!recognition) return alert("Mikrofondan foydalanish uchun Chrome/Edge brauzeridan foydalaning.");
+            recognition.start();
+        }
+
+        function cleanText(str, lang) {
+            if (lang === 'ja') {
+                return str.replace(/[\s\.\,\!\?]/g, '');
+            } else {
+                return str.toLowerCase().replace(/[^а-яё ]/g, '');
+            }
+        }
+
+        function checkAnswer(spoken) {
+            speakBtn.disabled = true;
+            const expected = cleanText(currentPhrases[currentIndex].text, userLang);
+            const actual = cleanText(spoken, userLang);
+
+            if (actual.includes(expected) || expected.includes(actual)) {
+                feedbackEl.innerText = "✅ Zo'r! 10 ball qo'shildi.";
+                feedbackEl.className = "feedback correct";
+                score += 10;
+                scoreEl.innerText = score;
+
+                fetch('/api/score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telefon: userTelefon, score: 10 })
+                });
+            } else {
+                feedbackEl.innerText = "❌ Noto'g'ri bo'ldi. Qayta eshitib ko'ring.";
+                feedbackEl.className = "feedback incorrect";
+            }
+
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex >= currentPhrases.length) {
+                    currentIndex = 0;
+                    alert("🥳 Barcha bazaviy so'zlarni tugatdingiz! Vaqt hali yakunlanmagani sababli ularni xotirada mustahkamlaymiz!");
+                }
+                loadPhrase();
+            }, 2000);
+        }
+    </script>
+
+</body>
+
+</html>

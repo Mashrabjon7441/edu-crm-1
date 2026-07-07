@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Barcha O'quvchilar{% endblock %}
+{% block content %}
+
+<div class="card p-4 shadow-sm border-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <h3><i class="fas fa-users me-2 text-primary"></i> Markaz O'quvchilari</h3>
+
+        <!-- Qidiruv maydoni -->
+        <div class="input-group" style="max-width: 400px;">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="studentSearch" class="form-control border-start-0"
+                placeholder="Ism yoki familiya bo'yicha qidirish..." onkeyup="filterStudents()">
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="studentsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>O'quvchi (Familiya Ism)</th>
+                    <th>Guruh / Yo'nalish</th>
+                    <th>Telefon</th>
+                    <th>To'lov Statusi</th>
+                    <th>Keyingi To'lov</th>
+                    <th class="text-end">Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for en in students %}
+                {% set days_left = (en.next_payment_date - today).days if en.next_payment_date else 0 %}
+                <tr>
+                    <td><b>{{ en.student.full_name }}</b></td>
+                    <td><span class="badge bg-light text-dark border">{{ en.course.title }}</span></td>
+                    <td>{{ en.student.phone_number }}</td>
+                    <td>
+                        {% if days_left < 0 %} <span class="badge bg-danger">Qarzdor ({{ days_left | abs }} kun
+                            o'tdi)</span>
+                            {% elif days_left <= 5 %} <span class="badge bg-warning text-dark">Oz qoldi ({{ days_left }}
+                                kun)</span>
+                                {% else %}
+                                <span class="badge bg-success">To'langan ({{ days_left }} kun bor)</span>
+                                {% endif %}
+                    </td>
+                    <td>{{ en.next_payment_date.strftime('%d.%m.%Y') if en.next_payment_date else "-" }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('confirm_payment', eid=en.id) }}"
+                            class="btn btn-sm btn-outline-success me-1" title="To'lovni tasdiqlash">
+                            <i class="fas fa-check-circle me-1"></i> To'landi
+                        </a>
+                        <a href="{{ url_for('delete_enrollment', eid=en.id) }}" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('O\'quvchini ro\'yxatdan o\'chirishni xohlaysizmi?')"
+                            title="O'chirish">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Hozircha faol o'quvchilar yo'q.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function filterStudents() {
+        let input = document.getElementById("studentSearch");
+        let filter = input.value.toUpperCase();
+        let table = document.getElementById("studentsTable");
+        let tr = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < tr.length; i++) {
+            let td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                let txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+
+{% endblock %}

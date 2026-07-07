@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Davomat - {{ course.title }}{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">Panel</a></li>
+                <li class="breadcrumb-item active">{{ course.title }} - Davomat</li>
+            </ol>
+        </nav>
+        {% if not is_scheduled_today %}
+        <div class="alert alert-warning border-0 shadow-sm mb-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Diqqat!</strong> Bugun ushbu guruh uchun dars kuni emas. Davomiyatni faqat zarur bo'lsa kiriting.
+        </div>
+        {% endif %}
+        <div class="card p-3 shadow-sm border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fw-bold">{{ course.title }} <small class="text-muted">| {{ today.strftime('%d.%m.%Y')
+                        }}</small></h4>
+                <button type="button" class="btn btn-success" onclick="saveAttendance()">
+                    <i class="fas fa-save me-2"></i>Saqlash
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">O'quvchi</th>
+                    <th class="text-center">Holat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold">{{ student.full_name }}</div>
+                        <small class="text-muted">{{ student.phone_number }}</small>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group student-att" data-sid="{{ student.id }}">
+                            <input type="radio" class="btn-check" name="att_{{ student.id }}"
+                                id="present_{{ student.id }}" value="1" {% if att_dict.get(student.id)==1 or student.id
+                                not in att_dict %}checked{% endif %}>
+                            <label class="btn btn-outline-success btn-sm" for="present_{{ student.id }}">Keldi</label>
+
+                            <input type="radio" class="btn-check" name="att_{{ student.id }}"
+                                id="absent_{{ student.id }}" value="0" {% if att_dict.get(student.id)==0 %}checked{%
+                                endif %}>
+                            <label class="btn btn-outline-danger btn-sm" for="absent_{{ student.id }}">Kelmadi</label>
+
+                            <input type="radio" class="btn-check" name="att_{{ student.id }}"
+                                id="excused_{{ student.id }}" value="2" {% if att_dict.get(student.id)==2 %}checked{%
+                                endif %}>
+                            <label class="btn btn-outline-warning btn-sm" for="excused_{{ student.id }}">Sababli</label>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" class="text-center py-4 text-muted">Guruhda o'quvchilar yo'q.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function saveAttendance() {
+        const groups = document.querySelectorAll('.student-att');
+        const attendance = [];
+        groups.forEach(g => {
+            const sid = g.dataset.sid;
+            const status = g.querySelector('input:checked').value;
+            attendance.push({ student_id: sid, status: status });
+        });
+
+        fetch('{{ url_for("save_attendance") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                course_id: {{ course.id }},
+            attendance: attendance
+            })
+        }).then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Davomat saqlandi!');
+                window.location.href = '{{ url_for("teacher_dashboard") }}';
+            } else {
+                alert('Xatolik yuz berdi!');
+            }
+        });
+}
+</script>
+{% endblock %}

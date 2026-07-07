@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}O'qituvchi Paneli{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4 border-0 shadow-sm bg-primary text-white">
+            <h4>Xush kelibsiz, {{ current_user.full_name }}!</h4>
+            <p class="mb-0">Sizning faol guruhlaringiz va davomat guruhingiz.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <h5 class="mb-3 text-success fw-bold"><i class="fas fa-calendar-day me-2"></i>Bugungi darslar</h5>
+    </div>
+    {% for course in today_courses %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm border-0 border-top border-4 border-success">
+            <div class="card-body">
+                <h5 class="card-title fw-bold text-primary">{{ course.title }}</h5>
+                <div class="small mb-3 text-muted">
+                    <div><i class="fas fa-clock me-2"></i>{{ course.schedule_time }}</div>
+                    <div><i class="fas fa-calendar-alt me-2"></i>{{ course.days.replace(',', ', ') }}</div>
+                </div>
+                <a href="{{ url_for('teacher_course_view', cid=course.id) }}" class="btn btn-success w-100">
+                    <i class="fas fa-clipboard-check me-2"></i>Davomatni boshlash
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 mb-4">
+        <div class="alert alert-light border-0 shadow-sm">Bugun sizda rejalashtirilgan darslar yo'q.</div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-2">
+    <div class="col-12">
+        <h5 class="mb-3 text-muted fw-bold">Boshqa guruhlar</h5>
+    </div>
+    {% for course in other_courses %}
+    <div class="col-md-4 mb-4" style="opacity: 0.8;">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <div class="small text-primary fw-bold mb-1">{{ course.title }}</div>
+                <div class="small text-muted mb-2">
+                    <i class="fas fa-calendar-alt me-1"></i> {{ course.days.replace(',', ', ') }}
+                </div>
+                <a href="{{ url_for('teacher_course_view', cid=course.id) }}"
+                    class="btn btn-sm btn-outline-secondary w-100">
+                    Ko'rish
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

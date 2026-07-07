@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Til O'rganamiz (Rus/Yapon)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #50E3C2;
+            --dark: #2C3E50;
+            --light: #F4F7F6;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1f4037 0%, #99f2c8 100%);
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--dark);
+            font-weight: 800;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 5px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            color: #1565c0;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            border-left: 5px solid #ff9800;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            color: #e65100;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            font-family: 'Outfit', sans-serif;
+            background: white;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            background: linear-gradient(to right, var(--primary), #357ABD);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Poliqlot - Til Markazi 🌍</h2>
+
+        <div class="info-box">
+            <strong>💡 Tavsiya qilingan maslahat:</strong> Har qanday tilni o'rganish sabr talab etadi. Kuniga uzluksiz
+            shug'ullanish orqali:<br>
+            • <b>30 daqiqa:</b> 6 oyda o'rtacha gaplasha olasiz.<br>
+            • <b>60 daqiqa:</b> 3-4 oyda yaxshi so'zlashasiz!
+        </div>
+
+        <div class="warning-box">
+            ⚠️ Yodda tuting: Darslik jarayoni orqada yopilib qolmasligi uchun vaqtingiz tugamaguncha sahifadan
+            tashqariga chiqa olmaysiz!
+        </div>
+
+        <form action="/register" method="POST">
+            <div class="form-group">
+                <label for="ism">Ismingiz</label>
+                <input type="text" id="ism" name="ism" required placeholder="Masalan: Sardor">
+            </div>
+            <div class="form-group">
+                <label for="telefon">Telefon raqamingiz</label>
+                <input type="text" id="telefon" name="telefon" required placeholder="+998901234567">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="lang">Qaysi tilni o'rganasiz?</label>
+                    <select name="lang" id="lang" required>
+                        <option value="ru">Rus tili 🇷🇺</option>
+                        <option value="ja">Yapon tili 🇯🇵</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="daily_goal">Kunlik vaqt:</label>
+                    <select name="daily_goal" id="daily_goal" required>
+                        <option value="1">1 daqiqa (Test)</option>
+                        <option value="15">15 daqiqa</option>
+                        <option value="30" selected>30 daqiqa</option>
+                        <option value="60">60 daqiqa</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">Darsni Boshlash 🚀</button>
+        </form>
+    </div>
+
+</body>
+
+</html>

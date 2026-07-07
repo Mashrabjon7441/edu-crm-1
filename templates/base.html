@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Prevent theme flicker
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8f9fc;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --nav-bg: #ffffff;
+            --muted-text: #6c757d;
+            --border-color: #dee2e6;
+        }
+
+        [data-bs-theme="dark"] {
+            --bg-color: #1a1c23;
+            --card-bg: #24262d;
+            --text-color: #e1e1e1;
+            --nav-bg: #24262d;
+            --muted-text: #9e9e9e;
+            --border-color: #3f414a;
+        }
+
+        [data-bs-theme="dark"] .form-control,
+        [data-bs-theme="dark"] .form-select {
+            background-color: #2d303a;
+            border-color: #3f414a;
+            color: #ffffff;
+        }
+
+        [data-bs-theme="dark"] .form-control:focus {
+            background-color: #2d303a;
+            color: #ffffff;
+        }
+
+        [data-bs-theme="dark"] .modal-header {
+            border-bottom-color: var(--border-color);
+        }
+
+        [data-bs-theme="dark"] .modal-footer {
+            border-top-color: var(--border-color);
+        }
+
+        [data-bs-theme="dark"] .table-light,
+        [data-bs-theme="dark"] .table-light th,
+        [data-bs-theme="dark"] .table-light td {
+            background-color: #2d303a !important;
+            color: #ffffff !important;
+            border-color: #3f414a !important;
+        }
+
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #2d303a !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .text-dark {
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .modal-header {
+            border-bottom-color: var(--border-color);
+        }
+
+        [data-bs-theme="dark"] .modal-footer {
+            border-top-color: var(--border-color);
+        }
+
+        [data-bs-theme="dark"] .breadcrumb-item+.breadcrumb-item::before {
+            color: var(--muted-text);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .navbar {
+            background: var(--nav-bg) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-link {
+            color: var(--text-color) !important;
+        }
+
+        .nav-link:hover {
+            color: #4e73df !important;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .table {
+            color: var(--text-color);
+        }
+
+        .table-light {
+            background-color: var(--bg-color);
+        }
+
+        .btn-primary {
+            background-color: #4e73df;
+            border: none;
+        }
+
+        #themeToggle {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+            color: var(--text-color);
+        }
+
+        #themeToggle:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            body {
+                font-size: 0.9rem;
+            }
+
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+
+            .table {
+                font-size: 0.85rem;
+            }
+
+            .card {
+                padding: 1rem !important;
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        {% if current_user.is_authenticated and current_user.center_id %}
+        socket.on('new_lead_alert_{{ current_user.center_id }}', function (data) {
+            alert("🔔 YANGI ARIZA!\n\n" + data.full_name + " (" + data.course + ") guruhiga yozildi.");
+            setTimeout(() => { window.location.reload(); }, 1000);
+        });
+        {% else %}
+        socket.on('new_lead_alert', function (data) {
+            alert("🔔 YANGI ARIZA!\n\n" + data.full_name + " (" + data.course + ") guruhiga yozildi.");
+            setTimeout(() => { window.location.reload(); }, 1000);
+        });
+        {% endif %}
+
+        // Theme Toggle Logic
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            const icon = document.querySelector('#themeToggle i');
+            if (theme === 'dark') {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold text-primary" href="/"><i class="fas fa-graduation-cap me-2"></i>Edu CRM</a>
+
+            <div class="d-flex align-items-center ms-auto me-2">
+                <div id="themeToggle" title="Rejimni almashtirish">
+                    <i class="fas fa-moon"></i>
+                </div>
+            </div>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            {% if current_user.is_authenticated %}
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('manager_dashboard') }}"><i class="fas fa-tasks me-1"></i>
+                            Boshqaruv</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold text-dark" href="#" data-bs-toggle="modal"
+                            data-bs-target="#allStudentsModal">
+                            <i class="fas fa-users me-1 text-success"></i> O'quvchilar & To'lovlar
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <span class="me-3 small text-muted d-none d-lg-inline">Salom, <b>{{ current_user.username
+                            }}</b></span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Chiqish</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container-fluid px-3 px-md-4">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- O'quvchilar Modal (Global) -->
+    <div class="modal fade" id="allStudentsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content shadow border-0">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-user-graduate me-2"></i> Barcha O'quvchilar & To'lovlar
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Qidiruv -->
+                    <div class="p-3 border-bottom bg-light">
+                        <input type="text" id="globalStudentSearch" class="form-control"
+                            placeholder="🔍 Ism yoki familiya bo'yicha qidirish...">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="globalStudentsTable">
+                            <thead class="table-light small sticky-top">
+                                <tr>
+                                    <th class="ps-3">O'quvchi</th>
+                                    <th>Guruh</th>
+                                    <th class="d-none d-md-table-cell">Telefon</th>
+                                    <th>To'lov</th>
+                                    <th class="text-end pe-3">Amal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="globalStudentsBody">
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="spinner-border text-primary"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // O'quvchilar modalini yuklash
+        document.getElementById('allStudentsModal').addEventListener('show.bs.modal', function () {
+            fetch('/api/students')
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('globalStudentsBody');
+                    tbody.innerHTML = '';
+                    if (!data.length) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">O\'quvchilar yo\'q.</td></tr>';
+                        return;
+                    }
+                    data.forEach(s => {
+                        let cls = 'success', txt = 'To\'langan';
+                        if (s.days_left < 0) { cls = 'danger'; txt = `Qarzdor (${Math.abs(s.days_left)} kun)`; }
+                        else if (s.days_left <= 5) { cls = 'warning text-dark'; txt = `Oz qoldi (${s.days_left} kun)`; }
+                        tbody.innerHTML += `<tr>
+                            <td class="ps-3"><div class="fw-bold">${s.full_name}</div><small class="text-muted d-md-none">${s.phone}</small></td>
+                            <td><span class="badge bg-light text-dark border">${s.course}</span></td>
+                            <td class="d-none d-md-table-cell"><a href="tel:${s.phone}" class="text-decoration-none text-primary small">${s.phone}</a></td>
+                            <td><span class="badge bg-${cls} small">${txt}</span></td>
+                            <td class="text-end pe-3">
+                                <a href="/manager/enrollment/pay/${s.id}" class="btn btn-sm btn-outline-success me-1" title="To'lovni tasdiqlash"><i class="fas fa-check"></i></a>
+                                <a href="/manager/enrollment/delete/${s.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('O\\'chirilsinmi?')" title="O'chirish"><i class="fas fa-trash"></i></a>
+                            </td>
+                        </tr>`;
+                    });
+                });
+        });
+
+        // Real-time qidiruv
+        document.getElementById('globalStudentSearch').addEventListener('keyup', function () {
+            const filter = this.value.toUpperCase();
+            document.querySelectorAll('#globalStudentsTable tbody tr').forEach(row => {
+                const name = row.cells[0]?.textContent || '';
+                row.style.display = name.toUpperCase().includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+</body>
+
+</html>

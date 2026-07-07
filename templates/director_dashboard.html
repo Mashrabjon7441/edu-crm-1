@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Direktor Paneli{% endblock %}
+{% block content %}
+<script>
+    // Activate tab from URL hash
+    document.addEventListener('DOMContentLoaded', function () {
+        const hash = window.location.hash;
+        if (hash) {
+            const tabEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+            if (tabEl) {
+                const tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+
+        // Update hash on tab change
+        const tabBtns = document.querySelectorAll('button[data-bs-toggle="pill"]');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('shown.bs.tab', function (e) {
+                window.location.hash = e.target.getAttribute('data-bs-target');
+            });
+        });
+    });
+</script>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4 border-0 shadow-sm bg-dark text-white">
+            <h4 class="fw-bold mb-1">Direktor Monitoringi</h4>
+            <p class="mb-0 opacity-75 small">O'quv markazining barcha ko'rsatkichlari va boshqaruvi</p>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 border-0 border-start border-4 border-primary shadow-sm h-100">
+            <div class="text-muted small fw-bold text-uppercase">O'quvchilar</div>
+            <div class="h4 mb-0 fw-bold">{{ stats.total_students }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 border-0 border-start border-4 border-success shadow-sm h-100">
+            <div class="text-muted small fw-bold text-uppercase">Guruhlar</div>
+            <div class="h4 mb-0 fw-bold">{{ stats.active_courses }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 border-0 border-start border-4 border-info shadow-sm h-100">
+            <div class="text-muted small fw-bold text-uppercase">O'qituvchilar</div>
+            <div class="h4 mb-0 fw-bold">{{ stats.total_teachers }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 border-0 border-start border-4 border-warning shadow-sm h-100">
+            <div class="text-muted small fw-bold text-uppercase">Menejerlar</div>
+            <div class="h4 mb-0 fw-bold">{{ stats.total_managers }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-pills mb-4" id="directorTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" id="courses-tab" data-bs-toggle="pill"
+            data-bs-target="#courses">Guruhlar</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="managers-tab" data-bs-toggle="pill" data-bs-target="#managers">Menejerlar</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="teachers-tab" data-bs-toggle="pill"
+            data-bs-target="#teachers">O'qituvchilar</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="students-tab" data-bs-toggle="pill" data-bs-target="#students">Barcha
+            O'quvchilar</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Guruhlar -->
+    <div class="tab-pane fade show active" id="courses">
+        <div class="card shadow-sm border-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Guruh Nomi</th>
+                            <th>O'qituvchi</th>
+                            <th>Vaqt & Kunlar</th>
+                            <th>O'quvchilar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in courses %}
+                        <tr>
+                            <td class="ps-3 fw-bold">{{ c.title }}</td>
+                            <td>{{ c.teacher.full_name }}</td>
+                            <td><small>{{ c.schedule_time }} | {{ c.days }}</small></td>
+                            <td>{{ c.accepted_students_count }} / {{ c.max_students }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menejerlar -->
+    <div class="tab-pane fade" id="managers">
+        <div class="card shadow-sm border-0 p-4 mb-4">
+            <h5 class="fw-bold mb-3">Yangi Menejer Qo'shish</h5>
+            <form action="{{ url_for('update_manager_login') }}" method="POST" class="row g-3">
+                <input type="hidden" name="manager_id" value="0">
+                <div class="col-md-5">
+                    <input type="text" name="username" class="form-control" placeholder="Login" required>
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="password" class="form-control" placeholder="Parol" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Qo'shish</button>
+                </div>
+            </form>
+        </div>
+        <div class="card shadow-sm border-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Menejer</th>
+                            <th>Login</th>
+                            <th>Parol</th>
+                            <th>Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in managers %}
+                        <form action="{{ url_for('update_manager_login') }}" method="POST">
+                            <input type="hidden" name="manager_id" value="{{ m.id }}">
+                            <tr>
+                                <td><b>{{ m.username }}</b></td>
+                                <td><input type="text" name="username" class="form-control form-control-sm"
+                                        value="{{ m.username }}"></td>
+                                <td><input type="text" name="password" class="form-control form-control-sm"
+                                        value="{{ m.password_hash }}"></td>
+                                <td><button type="submit" class="btn btn-sm btn-success">Yangilash</button></td>
+                            </tr>
+                        </form>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- O'qituvchilar -->
+    <div class="tab-pane fade" id="teachers">
+        <div class="card shadow-sm border-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">O'qituvchi</th>
+                            <th>Sohasi</th>
+                            <th>Login</th>
+                            <th>Parol</th>
+                            <th>Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in teachers %}
+                        <form action="{{ url_for('update_teacher_login') }}" method="POST">
+                            <input type="hidden" name="teacher_id" value="{{ t.id }}">
+                            <tr>
+                                <td class="ps-3"><b>{{ t.full_name }}</b></td>
+                                <td>{{ t.subject }}</td>
+                                <td><input type="text" name="username" class="form-control form-control-sm"
+                                        value="{{ t.username or '' }}"></td>
+                                <td><input type="text" name="password" class="form-control form-control-sm"
+                                        value="{{ t.password_hash or '' }}"></td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button type="submit" class="btn btn-sm btn-success">Saqlash</button>
+                                        <a href="{{ url_for('delete_teacher', tid=t.id) }}"
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('O\'qituvchini o\'chirishni xohlaysizmi?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </form>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- O'quvchilar -->
+    <div class="tab-pane fade" id="students">
+        <div class="card shadow-sm border-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Ism Familiya</th>
+                            <th>Telefon</th>
+                            <th>Guruhlari</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in all_students %}
+                        <tr>
+                            <td class="ps-3 fw-bold">{{ s.full_name }}</td>
+                            <td>{{ s.phone_number }}</td>
+                            <td>
+                                {% for e in s.enrollments %}
+                                <span class="badge bg-light text-dark border">{{ e.course.title }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+{% block title %}Menejer Paneli - Edu CRM{% endblock %}
+{% block content %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="card p-3 shadow-sm h-100">
+            <h5 class="mb-3 text-primary"><i class="fas fa-plus-circle me-1"></i> Yangi Qo'shish</h5>
+            <div class="d-grid gap-2">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                    data-bs-target="#addTeacherModal">O'qituvchi Qo'shish</button>
+                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal"
+                    data-bs-target="#teachersListModal"><i class="fas fa-id-card me-1"></i> Login/Parol Berish</button>
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                    data-bs-target="#addCategoryModal"><i class="fas fa-folder-plus me-1"></i> Yangi Bo'lim
+                    Ochish</button>
+                <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
+                    data-bs-target="#addCourseModal"><i class="fas fa-users me-1"></i> Guruh Ochish</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-8">
+        <div class="card p-3 shadow-sm h-100">
+            <h5 class="mb-3"><i class="fas fa-chart-line me-1 text-warning"></i> Pipeline Holati</h5>
+            <div class="row text-center mt-3">
+                <div class="col-4">
+                    <p class="text-muted mb-1 small">Yangi Arizalar</p>
+                    <h2 class="fw-bold text-primary">{{ new_leads|length }}</h2>
+                </div>
+                <div class="col-4 border-start">
+                    <p class="text-muted mb-1 small">Bugun Bog'lanish</p>
+                    <button class="btn btn-link text-decoration-none p-0" data-bs-toggle="modal"
+                        data-bs-target="#remindersModal">
+                        <h2 class="fw-bold text-warning mb-0">{{ reminders|length }}</h2>
+                        <small class="text-primary" style="font-size: 0.7rem;">Ko'rish <i
+                                class="fas fa-external-link-alt ms-1"></i></small>
+                    </button>
+                </div>
+                <div class="col-4 border-start">
+                    <p class="text-muted mb-1 small">Keyinroqqa surilgan</p>
+                    <h2 class="fw-bold text-secondary">{{ postponed_leads|length }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reminders Modal -->
+<div class="modal fade" id="remindersModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="fw-bold"><i class="fas fa-phone-alt me-2"></i> Bugun bog'lanish kerak</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>F.I.SH</th>
+                            <th>Telefon</th>
+                            <th class="text-end">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for en in reminders %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ en.student.full_name }}</div>
+                                <small class="badge bg-light text-dark border">{{ en.course.title }}</small>
+                            </td>
+                            <td><a href="tel:{{ en.student.phone_number }}" class="text-decoration-none fw-bold">{{
+                                    en.student.phone_number }}</a></td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-success" data-bs-dismiss="modal"
+                                        onclick="openAcceptModal({{ en.id }}, '{{ en.student.full_name }}', {{ en.course_id }})">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <a href="{{ url_for('reject_lead', eid=en.id) }}" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Rad etilsinmi?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">Bugun bog'lanish kutilayotganlar yo'q.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">Yopish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Table Container -->
+<div class="card p-3 p-md-4 mb-4 shadow-sm border-0">
+    <h5 class="fw-bold mb-3"><i class="fas fa-list-ul me-2 text-info"></i> Yangi Arizalar</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" style="min-width: 600px;">
+            <thead class="table-light small">
+                <tr>
+                    <th>Mijoz</th>
+                    <th>Yo'nalish</th>
+                    <th>Kelgan Vaqti</th>
+                    <th>Holati</th>
+                    <th class="text-end">Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for en in new_leads %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ en.student.full_name }}</div>
+                        <a href="tel:{{ en.student.phone_number }}" class="text-decoration-none small text-primary">{{
+                            en.student.phone_number }}</a>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ en.course.title }}</span></td>
+                    <td><small>{{ en.created_at.strftime('%d.%m %H:%M') }}</small></td>
+                    <td><span class="badge rounded-pill bg-secondary small">{{ en.status }}</span></td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-success"
+                                onclick="openAcceptModal({{ en.id }}, '{{ en.student.full_name }}', {{ en.course_id }})">Qabul</button>
+                            <button class="btn btn-sm btn-warning"
+                                onclick="openPostponeModal({{ en.id }})">Keyin</button>
+                            <a href="{{ url_for('reject_lead', eid=en.id) }}" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Rad etilsinmi?')">R</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted small">Hozircha yangi arizalar yo'q.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Keyinroq bog'lanish Table -->
+{% if postponed_leads %}
+<div class="card p-3 p-md-4 mb-4 border-light shadow-sm">
+    <h5 class="fw-bold mb-3 text-secondary"><i class="fas fa-clock me-2"></i> Keyinroq bog'lanish (Navbatdagi Rejalar)
+    </h5>
+    <p class="small text-muted mb-3"><i class="fas fa-info-circle me-1"></i> Ushbu arizalar belgilangan sana kelganda
+        <b>"Bugun Bog'lanish"</b> bo'limiga o'tadi.
+    </p>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light small text-muted">
+                <tr>
+                    <th>Mijoz</th>
+                    <th>Kurs/Yo'nalish</th>
+                    <th>Belgilangan sana</th>
+                    <th class="text-end">Amallar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for en in postponed_leads %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ en.student.full_name }}</div>
+                        <small class="text-muted">{{ en.student.phone_number }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border small">{{ en.course.title }}</span></td>
+                    <td><b class="text-warning"><i class="fas fa-calendar-day me-1"></i> {{
+                            en.callback_date.strftime('%d.%m.%Y') }}</b></td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-success"
+                                onclick="openAcceptModal({{ en.id }}, '{{ en.student.full_name }}', {{ en.course_id }})">Qabul</button>
+                            <button class="btn btn-sm btn-outline-warning"
+                                onclick="openPostponeModal({{ en.id }})">O'zgartirish</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Guruhlar Monitoringi (Grouped) -->
+<div class="card p-4 shadow-sm border-0">
+    <h5 class="mb-4"><i class="fas fa-layer-group me-2 text-primary"></i> Kurslar va Guruhlar</h5>
+    <div class="accordion" id="courseAccordion">
+        {% for course_title, c_list in grouped_courses.items() %}
+        <div class="accordion-item mb-2 border shadow-sm rounded-3 overflow-hidden">
+            <h2 class="accordion-header">
+                <div class="d-flex align-items-center w-100">
+                    <button class="accordion-button collapsed fw-bold py-3" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse{{ loop.index }}">
+                        <i class="fas fa-folder-open me-2 text-warning"></i> {{ course_title }}
+                        <span class="ms-3 badge bg-light text-dark">{{ c_list|length }} guruh</span>
+                    </button>
+                    <a href="{{ url_for('delete_category', cat_name=course_title) }}"
+                        class="btn btn-sm btn-outline-danger me-3"
+                        onclick="event.stopPropagation(); return confirm('Ushbu bo\'limni (kategoriyani) o\'chirishni xohlaysizmi?')">
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                </div>
+            </h2>
+            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#courseAccordion">
+                <div class="accordion-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light small text-uppercase text-muted">
+                            <tr>
+                                <th class="ps-4">O'qituvchi</th>
+                                <th>Dars Vaqti</th>
+                                <th>Dars Kunlari</th>
+                                <th>O'quvchilar</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in c_list %}
+                            <tr>
+                                <td class="ps-4">{{ c.teacher.full_name if c.teacher else '— (O\'qituvchi
+                                    tayinlanmagan)' }}</td>
+                                <td><b>{{ c.schedule_time }}</b></td>
+                                <td><small class="text-muted">{{ c.days.replace(',', ', ') if c.days else '—' }}</small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-link p-0 text-decoration-none fw-bold"
+                                        onclick="viewStudents({{ c.id }}, '{{ c.title }} ({{ c.schedule_time }})')">
+                                        {{ c.accepted_students_count }} / {{ c.max_students }}
+                                    </button>
+                                </td>
+                                <td><span
+                                        class="badge rounded-pill bg-{{ 'primary' if c.status == 'active' else 'danger' }}">{{
+                                        c.status }}</span></td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('manager_course_attendance', cid=c.id) }}"
+                                            class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-clipboard-check"></i> Davomat
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-primary" title="O'quvchi qo'shish"
+                                            onclick="openManualAddModal({{ c.id }}, '{{ c.title }} ({{ c.schedule_time }})')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" title="O'qituvchini o'zgartirish"
+                                            onclick="openChangeTeacherModal({{ c.id }}, '{{ c.title }}', {{ c.teacher_id or 'null' }})">
+                                            <i class="fas fa-user-edit"></i>
+                                        </button>
+                                        <a href="{{ url_for('delete_course', cid=c.id) }}"
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Bu guruhni o\'chirishni xohlaysizmi?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- --- MODALS --- -->
+
+<!-- Manual Add Student Modal -->
+<div class="modal fade" id="manualAddModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('add_manual_student') }}" method="POST" class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5>O'quvchini qo'shish: <span id="manual_course_title" class="text-primary"></span></h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="course_id" id="manual_course_id">
+                <div class="mb-3"><label class="form-label">O'quvchi Ism va Familiyasi:</label><input type="text"
+                        name="full_name" class="form-control" placeholder="Masalan: Bakirov Aziz" required></div>
+                <div class="mb-3"><label class="form-label">Telefon raqami:</label><input type="text"
+                        name="phone_number" class="form-control" placeholder="+998901234567" required></div>
+                <div class="alert alert-info py-2 small mb-0"><i class="fas fa-sync me-1"></i> Botga shu raqam ulasa,
+                    avtomatik bog'lanadi.</div>
+            </div>
+            <div class="modal-footer border-0"><button type="submit" class="btn btn-primary w-100">Guruhga
+                    Qo'shish</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Accept Lead Modal -->
+<div class="modal fade" id="acceptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('accept_lead') }}" method="POST" class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5>Arizani Tasdiqlash: <span id="modal_student_name" class="text-success"></span></h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="enrollment_id" id="accept_eid">
+                <label class="form-label">Guruhni Tasdiqlang (yoki O'zgartiring):</label>
+                <select name="course_id" id="accept_course_id" class="form-select mb-3">
+                    {% for c_title, c_list in grouped_courses.items() %}
+                    <optgroup label="{{ c_title }}">
+                        {% for c in c_list %}<option value="{{ c.id }}">{{ c.schedule_time }} ({{ c.teacher.full_name
+                            }})</option>{% endfor %}
+                    </optgroup>
+                    {% endfor %}
+                </select>
+                <label class="form-label">Qo'shilgan Sana:</label><input type="date" name="joined_date"
+                    class="form-control" value="{{ date_today }}">
+            </div>
+            <div class="modal-footer border-0"><button type="submit" class="btn btn-success w-100">Tasdiqlash va
+                    Qo'shish</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- Postpone Modal -->
+<div class="modal fade" id="postponeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('postpone_lead') }}" method="POST" class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5>Keyinroqqa surish</h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="enrollment_id" id="postpone_eid">
+                <label class="form-label">Qachon qayta bog'lanish kerak?</label>
+                <input type="date" name="callback_date" class="form-control" required>
+            </div>
+            <div class="modal-footer border-0"><button type="submit" class="btn btn-warning w-100">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Teacher Modal -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('add_teacher') }}" method="POST" class="modal-content p-3 shadow">
+            <h5 class="mb-3 text-primary">Yangi O'qituvchi</h5>
+            <input type="text" name="full_name" class="form-control mb-2" placeholder="F.I.SH" required>
+            <input type="text" name="subject" class="form-control mb-2" placeholder="Mutaxassislik (Fan)" required>
+            <input type="text" name="qualification" class="form-control mb-2"
+                placeholder="Darajasi (masalan: IELTS 8.5) - Majburiy emas">
+            <button type="submit" class="btn btn-primary w-100">Saqlash</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('add_category') }}" method="POST" class="modal-content p-3 shadow">
+            <h5 class="mb-3 text-secondary"><i class="fas fa-folder-plus me-2"></i> Yangi Bo'lim</h5>
+            <p class="text-muted small mb-2">Bo'lim nomi (masalan: Ingliz tili, Dasturlash, Matematika)</p>
+            <input type="text" name="category_name" class="form-control mb-3" placeholder="Bo'lim nomi" required>
+            <button type="submit" class="btn btn-secondary w-100">Saqlash</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Course Modal -->
+<div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('add_course') }}" method="POST" class="modal-content p-3 shadow">
+            <h5 class="mb-3 text-success">Yangi Guruh Ochish</h5>
+            {% if categories %}
+            <select name="category" class="form-select mb-2" required>
+                <option value="">-- Bo'limni tanlang --</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <div class="alert alert-warning py-2 small mb-2">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Avval <strong>"Yangi Bo'lim Ochish"</strong> tugmasi bilan bo'lim qo'shing!
+            </div>
+            <input type="hidden" name="category" value="Umumiy">
+            {% endif %}
+            <input type="text" name="title" class="form-control mb-2"
+                placeholder="Guruh Nomi (masalan: A guruh, 1-guruh)" required>
+            <select name="teacher_id" class="form-select mb-2" required>
+                <option value="">O'qituvchini tanlang</option>
+                {% for t in teachers %}<option value="{{ t.id }}">{{ t.full_name }} ({{ t.subject }})</option>{% endfor
+                %}
+            </select>
+            <input type="date" name="start_date" class="form-control mb-2" required>
+            <input type="text" name="schedule_time" class="form-control mb-2"
+                placeholder="Dars vaqti (masalan: 14:00 - 16:00)" required>
+            <select name="days" class="form-select mb-2" required>
+                <option value="dushanba,chorshanba,juma">Dushanba, Chorshanba, Juma</option>
+                <option value="seshanba,payshanba,shanba">Seshanba, Payshanba, Shanba</option>
+            </select>
+            <input type="number" name="max_students" class="form-control mb-2" placeholder="O'quvchilar sig'imi (max)"
+                required value="15">
+            <button type="submit" class="btn btn-success w-100">Saqlash</button>
+        </form>
+    </div>
+</div>
+
+<!-- Students List Modal -->
+<div class="modal fade" id="studentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 id="students_modal_title"></h5><button type="button" class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>O'quvchi</th>
+                            <th>Tel</th>
+                            <th>Status</th>
+                            <th>Qo'shildi</th>
+                            <th>To'lov</th>
+                            <th class="text-end">Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students_list_body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teachers Login/Account Management Modal -->
+<div class="modal fade" id="teachersListModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="fw-bold"><i class="fas fa-id-card me-2"></i> O'qituvchi Accountlari</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th class="ps-3">O'qituvchi</th>
+                            <th>Username</th>
+                            <th>Status</th>
+                            <th class="text-end pe-3">Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in teachers %}
+                        <tr>
+                            <td class="ps-3"><b>{{ t.full_name }}</b><br><small class="text-muted">{{ t.subject
+                                    }}</small></td>
+                            <td><code>{{ t.username or '—' }}</code></td>
+                            <td>
+                                {% if t.username and t.password_hash %}
+                                <span class="badge bg-success">Faol</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Login yo'q</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-3">
+                                <button class="btn btn-sm btn-outline-primary"
+                                    onclick="openEditTeacherLogin({{ t.id }}, '{{ t.full_name }}', '{{ t.username or '' }}')">
+                                    <i class="fas fa-user-edit"></i> O'zgartirish
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Teacher Login Modal -->
+<div class="modal fade" id="updateTeacherLoginModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <form action="{{ url_for('update_teacher_login') }}" method="POST" class="modal-content p-3 shadow">
+            <h6 class="fw-bold mb-3" id="edit_t_name"></h6>
+            <input type="hidden" name="teacher_id" id="edit_t_id">
+            <div class="mb-2">
+                <label class="small text-muted">Username</label>
+                <input type="text" name="username" id="edit_t_username" class="form-control form-control-sm" required>
+            </div>
+            <div class="mb-3">
+                <label class="small text-muted">Yangi Parol</label>
+                <input type="text" name="password" class="form-control form-control-sm" required>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary w-100">Saqlash</button>
+        </form>
+    </div>
+</div>
+
+<!-- Change Teacher Modal -->
+<div class="modal fade" id="changeTeacherModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('update_course_teacher') }}" method="POST" class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5>O'qituvchini o'zgartirish: <span id="ct_course_title" class="text-warning"></span></h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="course_id" id="ct_course_id">
+                <div class="mb-3">
+                    <label class="form-label">Yangi o'qituvchini tanlang:</label>
+                    <select name="teacher_id" id="ct_teacher_select" class="form-select" required>
+                        <option value="">O'qituvchini tanlang...</option>
+                        {% for t in teachers %}
+                        <option value="{{ t.id }}">{{ t.full_name }} ({{ t.subject }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="submit" class="btn btn-warning w-100">O'zgarishlarni Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openChangeTeacherModal(cid, title, currentTid) {
+        document.getElementById('ct_course_id').value = cid;
+        document.getElementById('ct_course_title').innerText = title;
+        document.getElementById('ct_teacher_select').value = currentTid || "";
+        new bootstrap.Modal(document.getElementById('changeTeacherModal')).show();
+    }
+    function openEditTeacherLogin(id, name, username) {
+        document.getElementById('edit_t_id').value = id;
+        document.getElementById('edit_t_name').innerText = name;
+        document.getElementById('edit_t_username').value = username;
+        new bootstrap.Modal(document.getElementById('updateTeacherLoginModal')).show();
+    }
+    function openManualAddModal(cid, title) {
+        document.getElementById('manual_course_id').value = cid;
+        document.getElementById('manual_course_title').innerText = title;
+        new bootstrap.Modal(document.getElementById('manualAddModal')).show();
+    }
+    function openAcceptModal(eid, name, courseId) {
+        document.getElementById('accept_eid').value = eid;
+        document.getElementById('modal_student_name').innerText = name;
+        document.getElementById('accept_course_id').value = courseId;
+        new bootstrap.Modal(document.getElementById('acceptModal')).show();
+    }
+    function openPostponeModal(eid) {
+        document.getElementById('postpone_eid').value = eid;
+        new bootstrap.Modal(document.getElementById('postponeModal')).show();
+    }
+    function viewStudents(cId, title) {
+        document.getElementById('students_modal_title').innerText = title;
+        const tbody = document.getElementById('students_list_body');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm"></div></td></tr>';
+        new bootstrap.Modal(document.getElementById('studentsModal')).show();
+        fetch('/manager/course/students/' + cId)
+            .then(res => res.json())
+            .then(data => {
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Hozircha o\'quvchilar yo\'q.</td></tr>';
+                } else {
+                    data.forEach(s => {
+                        let colorClass = 'success';
+                        let statusText = 'To\'langan';
+                        if (s.days_left < 0) {
+                            colorClass = 'danger'; statusText = 'Qarzdor';
+                        } else if (s.days_left <= 5) {
+                            colorClass = 'warning text-dark'; statusText = 'Oz qoldi';
+                        }
+
+                        tbody.innerHTML += `<tr>
+                            <td><b>${s.full_name}</b></td>
+                            <td>${s.phone}</td>
+                            <td><span class="badge bg-${colorClass}">${statusText}</span></td>
+                            <td><small>${s.joined_date}</small></td>
+                            <td><b>${s.next_payment}</b></td>
+                            <td class="text-end pe-3">
+                                <a href="/manager/enrollment/pay/${s.id}" class="btn btn-sm btn-outline-success me-1" title="To'lovni tasdiqlash">
+                                    <i class="fas fa-check-circle"></i>
+                                </a>
+                                <a href="/manager/enrollment/delete/${s.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('O\'chirilsinmi?')" title="O'chirish">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>`;
+                    });
+                }
+            });
+    }
+</script>
+
+{% endblock %}

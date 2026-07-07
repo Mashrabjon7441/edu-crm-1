@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Buyurtmalarni boshqarish</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .status-yangi {
+            color: #0d6efd;
+            font-weight: bold;
+        }
+
+        .status-bajarildi {
+            color: #198754;
+            font-weight: bold;
+        }
+
+        .status-bekor {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Biznes Admin</a>
+            <div class="collapse navbar-collapse justify-content-end">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <span class="nav-link text-light">Foydalanuvchi: <b>{{ current_user.username }}</b></span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-danger btn-sm ms-3" href="{{ url_for('logout') }}">Chiqish</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card p-4">
+            <h2 class="mb-4">Mijozlar Buyurtmalari</h2>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#ID</th>
+                            <th>Mijoz ismi</th>
+                            <th>Telefon</th>
+                            <th>Xizmat</th>
+                            <th>Vaqt</th>
+                            <th>Status</th>
+                            <th class="text-center">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.id }}</td>
+                            <td>{{ order.user.full_name }}</td>
+                            <td>{{ order.user.phone_number }}</td>
+                            <td>{{ order.service_name }}</td>
+                            <td>{{ order.created_at.strftime('%H:%M / %d.%m') }}</td>
+                            <td id="status-text-{{ order.id }}"
+                                class="status-{{ 'yangi' if order.status == 'yangi' else 'bajarildi' if order.status == 'bajarildi' else 'bekor' }}">
+                                {{ order.status.capitalize() }}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-success"
+                                        onclick="updateStatus({{ order.id }}, 'bajarildi')">Bajarildi</button>
+                                    <button class="btn btn-danger"
+                                        onclick="updateStatus({{ order.id }}, 'bekor qilindi')">Bekor</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">Buyurtmalar hali mavjud emas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function updateStatus(orderId, newStatus) {
+            if (!confirm('Haqiqatan ham ushbu buyurtma holatini o\'zgartirmoqchimisiz?')) return;
+
+            $.post('/admin/update_status', {
+                order_id: orderId,
+                status: newStatus
+            }, function (data) {
+                if (data.success) {
+                    const statusCell = $('#status-text-' + orderId);
+                    statusCell.text(newStatus.charAt(0).toUpperCase() + newStatus.slice(1));
+
+                    statusCell.removeClass('status-yangi status-bajarildi status-bekor');
+                    if (newStatus === 'bajarildi') statusCell.addClass('status-bajarildi');
+                    else if (newStatus === 'bekor qilindi') statusCell.addClass('status-bekor');
+                } else {
+                    alert('Xatolik: ' + data.error);
+                }
+            }).fail(function () {
+                alert('Server bilan ulanishda xatolik yuz berdi.');
+            });
+        }
+    </script>
+
+</body>
+
+</html>
