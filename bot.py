@@ -305,6 +305,7 @@ def register_center_webhook(center, app_url):
     """Register Telegram webhook for a single center. No polling thread needed!"""
     token = center.telegram_bot_token
     if not token or not token.strip():
+        print(f"⚠️ No token for center: {center.name}")
         return
     try:
         bot = make_bot(token, center.id)
@@ -313,9 +314,16 @@ def register_center_webhook(center, app_url):
         time.sleep(0.5)
         bot.set_webhook(url=webhook_url)
         active_bots[center.id] = bot
-        print(f"✅ Webhook set: {center.name} → {webhook_url}")
+        print(f"✅ Webhook set: {center.name} (id={center.id}) → {webhook_url}")
     except Exception as e:
-        print(f"❌ Webhook failed for {center.name}: {e}")
+        import traceback
+        err_msg = f"❌ Webhook FAILED for {center.name} (id={center.id}): {e}\n{traceback.format_exc()}\n"
+        print(err_msg)
+        try:
+            with open("webhook_errors.log", "a", encoding="utf-8") as _f:
+                _f.write(err_msg)
+        except Exception:
+            pass
 
 
 def init_webhooks(app_url):

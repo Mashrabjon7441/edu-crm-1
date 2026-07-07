@@ -761,13 +761,24 @@ def bot_webhook(center_id):
             f.write(err_msg)
     return 'OK', 200
 
+_init_thread_ref = None  # set below at startup
+
 @app.route('/public/status')
 def public_status():
     from bot import active_bots
+    thread_alive = _init_thread_ref.is_alive() if _init_thread_ref else 'N/A'
+    log_tail = ''
+    if os.path.exists('webhook_errors.log'):
+        with open('webhook_errors.log', 'r', encoding='utf-8') as _f:
+            log_tail = _f.read()[-2000:]
     return f"""<pre>
 APP_URL={os.getenv('APP_URL','')}
 RENDER_EXTERNAL_URL={os.getenv('RENDER_EXTERNAL_URL','')}
 active_bots keys={list(active_bots.keys())}
+init_thread_alive={thread_alive}
+
+--- Last webhook errors ---
+{log_tail or '(none)'}
 </pre>"""
 
 @app.route('/public/webhook_logs')
@@ -814,6 +825,7 @@ if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
         from bot import init_webhooks, send_payment_reminders
         _init_thread = threading.Thread(target=init_webhooks, args=(APP_URL,), daemon=True)
         _init_thread.start()
+        _init_thread_ref = _init_thread  # expose to status endpoint
         print(f"Telegram bots: WEBHOOK mode → {APP_URL} (initializing in background...)")
 
         # Schedule daily payment reminders at 09:00
