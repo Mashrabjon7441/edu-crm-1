@@ -200,6 +200,71 @@ def add_director():
         ))
         session.commit()
         flash(f"Direktor {full_name} muvaffaqiyatli qo'shildi!")
+    session.close()
+    return redirect(url_for('superadmin_dashboard'))
+
+@app.route('/superadmin/director/edit/<int:director_id>', methods=['POST'])
+@login_required
+def edit_director(director_id):
+    if current_user.role != 'superadmin': return redirect(url_for('index'))
+    session = Session()
+    d = session.get(Admin, director_id)
+    if not d or d.role != 'director':
+        session.close()
+        flash("Direktor topilmadi!")
+        return redirect(url_for('superadmin_dashboard'))
+    
+    full_name = request.form.get('full_name')
+    username = request.form.get('username')
+    password = request.form.get('password')
+    bot_token = request.form.get('telegram_bot_token', '').strip()
+    cid = int(request.form.get('center_id'))
+    
+    existing = session.query(Admin).filter(Admin.username == username, Admin.id != director_id).first()
+    if existing:
+        flash("Ushbu login band, iltimos boshqa tanlang!")
+        session.close()
+        return redirect(url_for('superadmin_dashboard'))
+        
+    d.full_name = full_name
+    d.username = username
+    if password and password.strip():
+        d.password_hash = hash_password_if_needed(password)
+    d.center_id = cid
+    
+    center = session.get(Center, cid)
+    if center:
+        old_token = center.telegram_bot_token
+        center.telegram_bot_token = bot_token
+        session.commit()
+        
+        if bot_token and bot_token != old_token:
+            APP_URL = os.getenv('APP_URL', '').strip()
+            if APP_URL and APP_URL.startswith('https://'):
+                try:
+                    from bot import register_center_webhook
+                    register_center_webhook(center, APP_URL)
+                except Exception as e:
+                    print("Webhook update failed:", e)
+    else:
+        session.commit()
+        
+    session.close()
+    flash("Direktor ma'lumotlari muvaffaqiyatli yangilandi!")
+    return redirect(url_for('superadmin_dashboard'))
+
+@app.route('/superadmin/director/delete/<int:director_id>', methods=['POST'])
+@login_required
+def delete_director(director_id):
+    if current_user.role != 'superadmin': return redirect(url_for('index'))
+    session = Session()
+    d = session.get(Admin, director_id)
+    if d and d.role == 'director':
+        name = d.full_name
+        session.delete(d)
+        session.commit()
+        flash(f"Direktor {name} o'chirildi.")
+    session.close()
     return redirect(url_for('superadmin_dashboard'))
 
 # --- Manager/Director Dashboard ---

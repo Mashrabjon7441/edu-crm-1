@@ -77,6 +77,7 @@
                             <th>Direktor</th>
                             <th>Markaz</th>
                             <th>Login</th>
+                            <th class="text-end">Amallar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -88,10 +89,23 @@
                             <td><span class="badge bg-light text-primary border">{{ d.center.name if d.center else
                                     'Loyihasiz' }}</span></td>
                             <td><code>{{ d.username }}</code></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal"
+                                    data-bs-target="#editDirectorModal{{ d.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form action="{{ url_for('delete_director', director_id=d.id) }}" method="POST"
+                                    class="d-inline"
+                                    onsubmit="return confirm('Haqiqatdan ham ushbu direktorni o\'chirmoqchimisiz?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-4">Hozircha hech qanday direktor
+                            <td colspan="4" class="text-center text-muted py-4">Hozircha hech qanday direktor
                                 tayinlanmagan.</td>
                         </tr>
                         {% endfor %}
@@ -101,6 +115,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- ================= MODALS ================= -->
 
@@ -178,5 +193,55 @@
         </div>
     </div>
 </div>
+
+{% for d in directors %}
+<!-- Direktor Tahrirlash Modali ({{ d.username }}) -->
+<div class="modal fade" id="editDirectorModal{{ d.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i> Direktor ma'lumotlarini tahrirlash</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('edit_director', director_id=d.id) }}" method="POST">
+                <div class="modal-body row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Markazni Tanlang</label>
+                        <select name="center_id" class="form-select" required>
+                            {% for c in centers %}
+                            <option value="{{ c.id }}" {% if d.center_id==c.id %}selected{% endif %}>{{ c.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Direktor Ism Familiyasi</label>
+                        <input type="text" name="full_name" class="form-control" value="{{ d.full_name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Login username</label>
+                        <input type="text" name="username" class="form-control" value="{{ d.username }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Yangi Parol (ixtiyoriy)</label>
+                        <input type="text" name="password" class="form-control" placeholder="O'zgarishsiz qoldirish...">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Markaz Telegram Bot Tokeni</label>
+                        <input type="text" name="telegram_bot_token" class="form-control"
+                            value="{{ d.center.telegram_bot_token if d.center else '' }}" required>
+                        <div class="form-text small">Eski token o'zgartirilsa, bot yangi token bilan bog'lanadi.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary fw-bold">O'zgarishlarni Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 {% endblock %}
