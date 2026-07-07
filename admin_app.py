@@ -761,6 +761,15 @@ def bot_webhook(center_id):
             f.write(err_msg)
     return 'OK', 200
 
+@app.route('/public/status')
+def public_status():
+    from bot import active_bots
+    return f"""<pre>
+APP_URL={os.getenv('APP_URL','')}
+RENDER_EXTERNAL_URL={os.getenv('RENDER_EXTERNAL_URL','')}
+active_bots keys={list(active_bots.keys())}
+</pre>"""
+
 @app.route('/public/webhook_logs')
 def view_webhook_logs():
     content = ""
@@ -800,12 +809,12 @@ if not APP_URL:
     APP_URL = os.getenv('RENDER_EXTERNAL_URL', '').strip()
 
 if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
-    # PRODUCTION — use webhooks
+    # PRODUCTION — use webhooks (thread so gunicorn doesn't timeout during startup)
     try:
         from bot import init_webhooks, send_payment_reminders
-        # Run directly (NOT in daemon thread) so active_bots is ready before requests arrive
-        init_webhooks(APP_URL)
-        print(f"Telegram bots: WEBHOOK mode → {APP_URL}")
+        _init_thread = threading.Thread(target=init_webhooks, args=(APP_URL,), daemon=True)
+        _init_thread.start()
+        print(f"Telegram bots: WEBHOOK mode → {APP_URL} (initializing in background...)")
 
         # Schedule daily payment reminders at 09:00
         from apscheduler.schedulers.background import BackgroundScheduler
