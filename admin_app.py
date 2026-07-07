@@ -532,5 +532,14 @@ try:
 except Exception as e:
     print("Failed to start bot supervisor thread:", e)
 
+# Start Super Admin Control Bot in a background thread
+try:
+    from superadmin_bot import start_superadmin_bot
+    sa_bot_thread = threading.Thread(target=start_superadmin_bot, daemon=True)
+    sa_bot_thread.start()
+    print("Super Admin control bot thread started successfully.")
+except Exception as e:
+    print("Failed to start Super Admin bot thread:", e)
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=3000)

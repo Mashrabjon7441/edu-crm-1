@@ -114,7 +114,8 @@ def make_bot(token, center_id):
         # Notify admin app about new lead
         try:
             import requests
-            requests.post("http://localhost:3000/api/new_lead", json={
+            port = os.getenv("PORT", "3000")
+            requests.post(f"http://127.0.0.1:{port}/api/new_lead", json={
                 "full_name": s.full_name,
                 "course": course_title,
                 "center_id": center_id
