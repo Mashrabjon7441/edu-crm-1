@@ -110,6 +110,30 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.route('/setup_admin_x7k9q')
+def setup_admin():
+    """Temporary one-time setup endpoint. Remove after first use."""
+    try:
+        s = session_factory()
+        sa = s.query(Admin).filter_by(role='superadmin').first()
+        if sa:
+            sa.username = 'superadmin'
+            sa.password_hash = generate_password_hash('superadmin123')
+            msg = f"Updated! Login: superadmin / superadmin123"
+        else:
+            s.add(Admin(
+                username='superadmin',
+                password_hash=generate_password_hash('superadmin123'),
+                role='superadmin',
+                full_name='Super Administrator'
+            ))
+            msg = "Created! Login: superadmin / superadmin123"
+        s.commit()
+        s.close()
+        return f"<h2>OK: {msg}</h2><a href='/login'>Login sahifasiga o'tish</a>"
+    except Exception as e:
+        return f"<h2>Xato: {str(e)}</h2>", 500
+
 @app.route('/')
 @login_required
 def index():
