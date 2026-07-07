@@ -328,22 +328,27 @@ def register_center_webhook(center, app_url):
 
 def init_webhooks(app_url):
     """Init webhooks for all centers (call once on startup)."""
+    import datetime
+    log_lines = []
+    log_lines.append(f"[{datetime.datetime.now()}] init_webhooks started with app_url={app_url}")
     try:
         session = Session()
         centers = session.query(Center).all()
+        log_lines.append(f"[{datetime.datetime.now()}] Found {len(centers)} centers in db.")
         session.close()
         for center in centers:
+            log_lines.append(f"[{datetime.datetime.now()}] Registering webhook for center id={center.id}, name={center.name}")
             register_center_webhook(center, app_url)
-        print(f"Webhooks initialized. Active bots: {len(active_bots)}")
+        log_lines.append(f"[{datetime.datetime.now()}] Done registering. active_bots keys={list(active_bots.keys())}")
     except Exception as e:
         import traceback
-        err_msg = f"❌ init_webhooks thread crash: {e}\n{traceback.format_exc()}\n"
-        print(err_msg)
-        try:
-            with open("webhook_errors.log", "a", encoding="utf-8") as _f:
-                _f.write(err_msg)
-        except Exception:
-            pass
+        log_lines.append(f"[{datetime.datetime.now()}] Exception in init_webhooks: {e}\n{traceback.format_exc()}")
+        
+    try:
+        with open("startup.log", "a", encoding="utf-8") as f:
+            f.write("\n".join(log_lines) + "\n")
+    except Exception:
+        pass
 
 
 # ─────────────────────────────────────────────

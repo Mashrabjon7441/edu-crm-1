@@ -783,6 +783,11 @@ def public_status():
         with open('webhook_errors.log', 'r', encoding='utf-8') as _f:
             log_tail = _f.read()[-2000:]
             
+    startup_log = ''
+    if os.path.exists('startup.log'):
+        with open('startup.log', 'r', encoding='utf-8') as _sf:
+            startup_log = _sf.read()[-3000:]
+            
     return f"""<pre>
 APP_URL={os.getenv('APP_URL','')}
 RENDER_EXTERNAL_URL={os.getenv('RENDER_EXTERNAL_URL','')}
@@ -791,6 +796,9 @@ init_thread_alive={thread_alive}
 
 Centers in DB:
 {chr(10).join(centers_info) if centers_info else '(none)'}
+
+--- Startup Log ---
+{startup_log or '(none)'}
 
 --- Last webhook errors ---
 {log_tail or '(none)'}
