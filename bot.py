@@ -58,7 +58,10 @@ def make_bot(token, center_id):
 
     def get_phone(message):
         if not message.contact:
-            return bot.send_message(message.chat.id, "Iltimos, tugmani bosing!")
+            # Re-register so user doesn't get stuck
+            bot.send_message(message.chat.id, "Iltimos, quyidagi tugmani bosing va telefon raqamingizni yuboring! 👇")
+            bot.register_next_step_handler(message, get_phone)
+            return
         name = user_data.get(message.chat.id, {}).get('full_name', 'O\'quvchi')
         phone = message.contact.phone_number
         session = Session()
@@ -73,7 +76,7 @@ def make_bot(token, center_id):
             session.add(s)
             session.commit()
         session.close()
-        bot.send_message(message.chat.id, "✅ Ro'yxatdan o'tdingiz!", reply_markup=main_menu())
+        bot.send_message(message.chat.id, "✅ Ro'yxatdan o'tdingiz!\nQuyidagi menyudan foydalaning:", reply_markup=main_menu())
 
     # ── 📚 Kurslarni ko'rish ─────────────────
     @bot.message_handler(func=lambda m: m.text == "📚 Kurslarni ko'rish")
@@ -82,19 +85,33 @@ def make_bot(token, center_id):
         cats = session.query(Category).filter_by(center_id=center_id).all()
         session.close()
         if not cats:
-            return bot.send_message(message.chat.id, "Hozircha kurs bo'limlari mavjud emas.")
+            return bot.send_message(message.chat.id,
+                "📭 Hozircha kurs bo'limlari mavjud emas.\n"
+                "Tez orada kurslar qo'shiladi! O'quv markazi bilan bog'laning.")
         markup = types.InlineKeyboardMarkup(row_width=1)
         for c in cats:
             markup.add(types.InlineKeyboardButton(f"📂 {c.name}", callback_data=f"section_{c.name}"))
-        bot.send_message(message.chat.id, "Bo'limni tanlang:", reply_markup=markup)
+        bot.send_message(message.chat.id, "📚 Quyidagi bo'limlardan birini tanlang:", reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('section_'))
     def list_courses(call):
+        bot.answer_callback_query(call.id)  # dismiss loading spinner
         sec = call.data.replace('section_', '', 1)
         session = Session()
         courses = session.query(Course).options(joinedload(Course.enrollments)).filter_by(
             category=sec, status='active', center_id=center_id).all()
+        session.close()
         markup = types.InlineKeyboardMarkup(row_width=1)
+        if not courses:
+            markup.add(types.InlineKeyboardButton("🔙 Orqaga", callback_data="back_cats"))
+            try:
+                bot.edit_message_text(f"📂 *{sec}* bo'limida hozircha faol guruh yo'q.",
+                    call.message.chat.id, call.message.message_id,
+                    reply_markup=markup, parse_mode="Markdown")
+            except Exception:
+                bot.send_message(call.message.chat.id, f"📂 *{sec}* bo'limida hozircha faol guruh yo'q.",
+                    reply_markup=markup, parse_mode="Markdown")
+            return
         for c in courses:
             accepted = sum(1 for e in c.enrollments if e.status == 'accepted')
             slots_left = (c.max_students or 15) - accepted
@@ -102,34 +119,67 @@ def make_bot(token, center_id):
             label = f"{emoji} {c.title} | ⏰ {c.schedule_time} | Bo'sh joy: {slots_left}"
             markup.add(types.InlineKeyboardButton(label, callback_data=f"enroll_{c.id}"))
         markup.add(types.InlineKeyboardButton("🔙 Orqaga", callback_data="back_cats"))
-        session.close()
-        bot.edit_message_text(f"📂 {sec} guruhlari:", call.message.chat.id, call.message.message_id, reply_markup=markup)
+        try:
+            bot.edit_message_text(f"📂 *{sec}* guruhlari:", call.message.chat.id,
+                call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        except Exception:
+            bot.send_message(call.message.chat.id, f"📂 *{sec}* guruhlari:",
+                reply_markup=markup, parse_mode="Markdown")
 
     @bot.callback_query_handler(func=lambda call: call.data == "back_cats")
     def back_to_cats(call):
-        list_categories(call.message)
+        bot.answer_callback_query(call.id)
+        session = Session()
+        cats = session.query(Category).filter_by(center_id=center_id).all()
+        session.close()
+        if not cats:
+            try:
+                bot.edit_message_text("📭 Hozircha kurs bo'limlari mavjud emas.",
+                    call.message.chat.id, call.message.message_id)
+            except Exception:
+                bot.send_message(call.message.chat.id, "📭 Hozircha kurs bo'limlari mavjud emas.")
+            return
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for c in cats:
+            markup.add(types.InlineKeyboardButton(f"📂 {c.name}", callback_data=f"section_{c.name}"))
+        try:
+            bot.edit_message_text("📚 Quyidagi bo'limlardan birini tanlang:",
+                call.message.chat.id, call.message.message_id, reply_markup=markup)
+        except Exception:
+            bot.send_message(call.message.chat.id, "📚 Quyidagi bo'limlardan birini tanlang:",
+                reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('enroll_'))
     def enroll(call):
+        bot.answer_callback_query(call.id)  # dismiss loading spinner first
         cid = int(call.data.split('_')[1])
         session = Session()
         s = session.query(Student).filter_by(telegram_id=call.from_user.id, center_id=center_id).first()
         if not s:
             session.close()
-            bot.answer_callback_query(call.id, "Avval ro'yxatdan o'ting!")
+            bot.send_message(call.message.chat.id,
+                "❗ Avval ro'yxatdan o'ting! /start buyrug'ini yuboring.")
             return
         course = session.query(Course).filter_by(id=cid, center_id=center_id).first()
-        course_title = course.title if course else "Noma'lum"
+        if not course:
+            session.close()
+            bot.send_message(call.message.chat.id, "❗ Kurs topilmadi.")
+            return
+        course_title = course.title
 
         # Check if already enrolled
         existing = session.query(Enrollment).filter_by(student_id=s.id, course_id=cid).first()
         if existing:
             session.close()
-            bot.answer_callback_query(call.id, "Siz allaqachon bu guruhga arzingizni yuborgansiz!")
+            status_text = {"waitlisted": "ko'rib chiqilmoqda", "accepted": "qabul qilingan", "rejected": "rad etilgan"}.get(existing.status, existing.status)
+            bot.send_message(call.message.chat.id,
+                f"ℹ️ Siz *{course_title}* guruhiga avval ariza yuborgansiz.\nHolati: *{status_text}*",
+                parse_mode="Markdown")
             return
 
         session.add(Enrollment(student_id=s.id, course_id=cid, status='waitlisted'))
         session.commit()
+        student_name = s.full_name
         session.close()
 
         # Notify web app
@@ -137,14 +187,14 @@ def make_bot(token, center_id):
             import requests
             port = os.getenv("PORT", "10000")
             requests.post(f"http://127.0.0.1:{port}/api/new_lead", json={
-                "full_name": s.full_name, "course": course_title, "center_id": center_id
+                "full_name": student_name, "course": course_title, "center_id": center_id
             }, timeout=2)
         except Exception:
             pass
 
-        bot.answer_callback_query(call.id, "✅ Arizangiz qabul qilindi!")
         bot.send_message(call.message.chat.id,
-            f"✅ *{course_title}* guruhiga arizangiz yuborildi!\nMenejerlar tez orada bog'lanishadi. 📞",
+            f"✅ *{course_title}* guruhiga arizangiz muvaffaqiyatli yuborildi!\n"
+            f"📞 Menejerlar tez orada bog'lanishadi.",
             parse_mode="Markdown")
 
     # ── 👤 Profilim ──────────────────────────
