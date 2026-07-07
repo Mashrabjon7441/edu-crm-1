@@ -22,7 +22,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", f'sqlite:///{os.path.join(os.path.abspa
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
-session_factory = sessionmaker(bind=engine)
+session_factory = sessionmaker(bind=engine, expire_on_commit=False)
 Session = scoped_session(session_factory)
 
 # Bot Setup
@@ -41,21 +41,14 @@ def load_user(user_id_str):
         if len(parts) != 2:
             return None
         u_type, u_id = parts[0], int(parts[1])
-        session = session_factory()
-        try:
-            if u_type == 'admin':
-                user = session.get(Admin, u_id)
-            elif u_type == 'teacher':
-                user = session.get(Teacher, u_id)
-            else:
-                return None
-            if user:
-                session.expunge(user)
-            return user
-        finally:
-            session.close()
+        s = Session()
+        if u_type == 'admin':
+            return s.get(Admin, u_id)
+        elif u_type == 'teacher':
+            return s.get(Teacher, u_id)
     except Exception:
         return None
+    return None
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
