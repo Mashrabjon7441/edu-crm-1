@@ -765,17 +765,32 @@ _init_thread_ref = None  # set below at startup
 
 @app.route('/public/status')
 def public_status():
-    from bot import active_bots
+    from bot import active_bots, Session as BotSession
+    from models import Center
+    s = BotSession()
+    centers = s.query(Center).all()
+    s.close()
+    
+    centers_info = []
+    for c in centers:
+        has_token = bool(c.telegram_bot_token and c.telegram_bot_token.strip())
+        token_len = len(c.telegram_bot_token) if c.telegram_bot_token else 0
+        centers_info.append(f"ID={c.id}, Name='{c.name}', HasToken={has_token} (len={token_len})")
+        
     thread_alive = _init_thread_ref.is_alive() if _init_thread_ref else 'N/A'
     log_tail = ''
     if os.path.exists('webhook_errors.log'):
         with open('webhook_errors.log', 'r', encoding='utf-8') as _f:
             log_tail = _f.read()[-2000:]
+            
     return f"""<pre>
 APP_URL={os.getenv('APP_URL','')}
 RENDER_EXTERNAL_URL={os.getenv('RENDER_EXTERNAL_URL','')}
 active_bots keys={list(active_bots.keys())}
 init_thread_alive={thread_alive}
+
+Centers in DB:
+{chr(10).join(centers_info) if centers_info else '(none)'}
 
 --- Last webhook errors ---
 {log_tail or '(none)'}
