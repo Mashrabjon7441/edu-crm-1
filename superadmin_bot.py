@@ -18,7 +18,7 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} i
 session_factory = sessionmaker(bind=engine)
 Session = scoped_session(session_factory)
 
-SUPERADMIN_TELEGRAM_ID = 7590290968
+SUPERADMIN_TELEGRAM_ID = 7637932499
 TOKEN = os.getenv("SUPERADMIN_BOT_TOKEN")
 
 def admin_only(func):
