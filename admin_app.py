@@ -301,8 +301,13 @@ def update_manager_login():
     center_id = current_user.center_id
     mid, user, passw = request.form.get('manager_id'), request.form.get('username'), request.form.get('password')
     m = session.query(Admin).filter_by(id=mid, role='manager', center_id=center_id).first()
-    if m: m.username = user; m.password_hash = hash_password_if_needed(passw)
-    elif mid == "0": session.add(Admin(username=user, password_hash=hash_password_if_needed(passw), role='manager', full_name="Manager", center_id=center_id))
+    if m:
+        m.username = user
+        if passw and passw.strip():
+            m.password_hash = hash_password_if_needed(passw.strip())
+    elif mid == "0":
+        p = passw.strip() if (passw and passw.strip()) else "manager123"
+        session.add(Admin(username=user, password_hash=hash_password_if_needed(p), role='manager', full_name="Manager", center_id=center_id))
     session.commit()
     return redirect(url_for('director_dashboard'))
 
@@ -437,7 +442,8 @@ def update_teacher_login():
         t = session.query(Teacher).filter_by(id=int(tid), center_id=current_user.center_id).first()
         if t:
             t.username = username
-            t.password_hash = hash_password_if_needed(password)
+            if password and password.strip():
+                t.password_hash = hash_password_if_needed(password.strip())
             session.commit()
     return redirect(request.referrer or url_for('manager_dashboard'))
 
