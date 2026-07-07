@@ -1,2 +1,1 @@
-web: gunicorn --worker-class eventlet -w 1 admin_app:app
-bot: python bot.py
+web: gunicorn -w 1 --threads 10 admin_app:app
