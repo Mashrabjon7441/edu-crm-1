@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from models import Base, Admin, Center
 from werkzeug.security import generate_password_hash
@@ -18,6 +18,19 @@ Session = sessionmaker(bind=engine)
 def init_db():
     Base.metadata.create_all(engine)
     session = Session()
+    
+    # Run manual migration to add added_by column to students
+    try:
+        session.execute(text("ALTER TABLE students ADD COLUMN IF NOT EXISTS added_by VARCHAR(100) DEFAULT 'Telegram Bot'"))
+        session.commit()
+    except Exception:
+        session.rollback()
+        try:
+            session.execute(text("ALTER TABLE students ADD COLUMN added_by VARCHAR(100) DEFAULT 'Telegram Bot'"))
+            session.commit()
+        except Exception:
+            session.rollback()
+
     
     # Super Admin with dynamic ENV settings
     sa_user = os.getenv("SUPERADMIN_USER", "superadmin")
