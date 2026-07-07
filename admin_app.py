@@ -746,9 +746,7 @@ def bot_webhook(center_id):
     return 'OK', 200
 
 @app.route('/superadmin/webhook_logs')
-@login_required
 def view_webhook_logs():
-    if current_user.role != 'superadmin': return redirect(url_for('index'))
     content = ""
     if os.path.exists("webhook_errors.log"):
         with open("webhook_errors.log", "r", encoding="utf-8") as f:
