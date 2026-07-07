@@ -27,7 +27,7 @@ Session = scoped_session(session_factory)
 
 # Bot Setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN) if BOT_TOKEN else None
 
 # Flask-Login
 login_manager = LoginManager()
