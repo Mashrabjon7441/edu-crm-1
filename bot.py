@@ -328,12 +328,22 @@ def register_center_webhook(center, app_url):
 
 def init_webhooks(app_url):
     """Init webhooks for all centers (call once on startup)."""
-    session = Session()
-    centers = session.query(Center).all()
-    session.close()
-    for center in centers:
-        register_center_webhook(center, app_url)
-    print(f"Webhooks initialized. Active bots: {len(active_bots)}")
+    try:
+        session = Session()
+        centers = session.query(Center).all()
+        session.close()
+        for center in centers:
+            register_center_webhook(center, app_url)
+        print(f"Webhooks initialized. Active bots: {len(active_bots)}")
+    except Exception as e:
+        import traceback
+        err_msg = f"❌ init_webhooks thread crash: {e}\n{traceback.format_exc()}\n"
+        print(err_msg)
+        try:
+            with open("webhook_errors.log", "a", encoding="utf-8") as _f:
+                _f.write(err_msg)
+        except Exception:
+            pass
 
 
 # ─────────────────────────────────────────────
