@@ -146,38 +146,52 @@ def make_bot(token, center_id):
     return bot
 
 def supervisor_loop():
-    active_bot_tokens = {} # token -> thread
+    active_bot_tokens = {}  # token -> thread
     print("Multi-bot supervisor started. Monitoring database for new tokens...")
     while True:
         try:
             session = Session()
             centers = session.query(Center).all()
             session.close()
-            
+
             for center in centers:
                 token = center.telegram_bot_token
-                # Only start if token is configured and not already running
-                if token and token not in active_bot_tokens:
-                    print(f"New bot token found for center: {center.name} (ID: {center.id})")
-                    try:
-                        bot = make_bot(token, center.id)
-                        try:
-                            bot.delete_webhook(drop_pending_updates=True)
-                        except Exception:
-                            pass
-                        time.sleep(1)
-                        t = threading.Thread(
-                            target=bot.infinity_polling,
-                            kwargs={"skip_pending": True, "timeout": 30, "long_polling_timeout": 20},
-                            daemon=True
-                        )
-                        t.start()
-                        active_bot_tokens[token] = t
-                    except Exception as e:
-                        print(f"Failed to start bot for center {center.name}: {e}")
+                if not token:
+                    continue
+
+                t = active_bot_tokens.get(token)
+                # Start if not running or thread is dead
+                if t is None or not t.is_alive():
+                    if t is not None:
+                        print(f"Bot for center '{center.name}' died. Restarting...")
+
+                    def run_bot(tok=token, cid=center.id, cname=center.name):
+                        while True:
+                            try:
+                                b = make_bot(tok, cid)
+                                try:
+                                    b.delete_webhook(drop_pending_updates=True)
+                                except Exception:
+                                    pass
+                                time.sleep(2)
+                                print(f"Bot polling started: {cname}")
+                                b.infinity_polling(
+                                    skip_pending=True,
+                                    timeout=30,
+                                    long_polling_timeout=20,
+                                    restart_on_change=False
+                                )
+                            except Exception as e:
+                                print(f"Bot for '{cname}' crashed: {e}. Restarting in 15s...")
+                                time.sleep(15)
+
+                    t = threading.Thread(target=run_bot, daemon=True)
+                    t.start()
+                    active_bot_tokens[token] = t
+
         except Exception as e:
             print("Supervisor loop error:", e)
-        time.sleep(10) # check for new centers / tokens every 10 seconds
+        time.sleep(15)  # check every 15 seconds
 
 if __name__ == "__main__":
     supervisor_loop()

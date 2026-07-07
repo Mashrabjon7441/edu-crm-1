@@ -80,6 +80,7 @@ class Student(Base):
     full_name = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=False)
     center_id = Column(Integer, ForeignKey('centers.id'), nullable=True)
+    added_by = Column(String(100), nullable=True, default='Telegram Bot')
 
     center = relationship('Center', backref='students')
     enrollments = relationship('Enrollment', back_populates='student')
@@ -112,3 +113,15 @@ class Attendance(Base):
 
     course = relationship('Course')
     student = relationship('Student')
+
+class ActivityLog(Base):
+    __tablename__ = 'activity_logs'
+    id = Column(Integer, primary_key=True)
+    center_id = Column(Integer, ForeignKey('centers.id'), nullable=False)
+    user_name = Column(String(255), nullable=False)
+    user_role = Column(String(50), nullable=False)
+    action = Column(String(100), nullable=False)
+    details = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    center = relationship('Center', backref='activity_logs')

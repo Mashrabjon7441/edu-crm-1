@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker, scoped_session, joinedload
-from models import Base, Admin, Teacher, Course, Student, Enrollment, Category, Attendance, Center
+from models import Base, Admin, Teacher, Course, Student, Enrollment, Category, Attendance, Center, ActivityLog
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_socketio import SocketIO, emit
@@ -108,19 +108,21 @@ def setup_admin():
     """Temporary one-time setup endpoint. Remove after first use."""
     try:
         s = session_factory()
+        sa_user = os.getenv("SUPERADMIN_USER", "Mashrabjon")
+        sa_pass = os.getenv("SUPERADMIN_PASS", "MAshRAbjONoo05")
         sa = s.query(Admin).filter_by(role='superadmin').first()
         if sa:
-            sa.username = 'superadmin'
-            sa.password_hash = generate_password_hash('superadmin123')
-            msg = f"Updated! Login: superadmin / superadmin123"
+            sa.username = sa_user
+            sa.password_hash = generate_password_hash(sa_pass)
+            msg = f"Updated! Login: {sa_user}"
         else:
             s.add(Admin(
-                username='superadmin',
-                password_hash=generate_password_hash('superadmin123'),
+                username=sa_user,
+                password_hash=generate_password_hash(sa_pass),
                 role='superadmin',
                 full_name='Super Administrator'
             ))
-            msg = "Created! Login: superadmin / superadmin123"
+            msg = f"Created! Login: {sa_user}"
         s.commit()
         s.close()
         return f"<h2>OK: {msg}</h2><a href='/login'>Login sahifasiga o'tish</a>"
