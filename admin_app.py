@@ -584,24 +584,79 @@ def notify_new_lead():
         socketio.emit('new_lead_alert', data)
     return jsonify({"status": "ok"})
 
-# Start Telegram Bot supervisor in a background thread
-try:
-    import threading
-    from bot import supervisor_loop
-    bot_thread = threading.Thread(target=supervisor_loop, daemon=True)
-    bot_thread.start()
-    print("Telegram bots supervisor thread started successfully.")
-except Exception as e:
-    print("Failed to start bot supervisor thread:", e)
+# ── Webhook receiver for per-center Telegram bots (production / RAM-efficient)
+@app.route('/bot_webhook/<int:center_id>', methods=['POST'])
+def bot_webhook(center_id):
+    from bot import active_bots
+    bot = active_bots.get(center_id)
+    if not bot:
+        return 'Bot not configured', 404
+    try:
+        import json
+        update = telebot.types.Update.de_json(request.data.decode('utf-8'))
+        bot.process_new_updates([update])
+    except Exception as e:
+        print(f"Webhook error for center {center_id}: {e}")
+    return 'OK', 200
 
-# Start Super Admin Control Bot in a background thread
+# ── Director: Broadcast announcement to all students via Telegram
+@app.route('/director/announce', methods=['POST'])
+@login_required
+def send_announcement_route():
+    if current_user.role != 'director':
+        return jsonify({'error': 'Access denied'}), 403
+    text = request.form.get('message', '').strip()
+    if not text:
+        flash("E'lon matni bo'sh bo'lishi mumkin emas!")
+        return redirect(url_for('director_dashboard'))
+    from bot import send_announcement
+    sent, err = send_announcement(current_user.center_id, text)
+    session = Session()
+    log_action(session, current_user.center_id, current_user.username, current_user.role,
+               "E'lon yuborildi", f"{sent} ta o'quvchiga: {text[:80]}")
+    session.commit()
+    flash(f"✅ E'lon {sent} ta o'quvchiga yuborildi!" if not err else f"⚠️ Xato: {err}")
+    return redirect(url_for('director_dashboard') + '#logs')
+
+# ── Startup: Webhook (production) or Polling (local)
+import threading
+
+APP_URL = os.getenv('APP_URL', '').strip()  # e.g. https://edu-crm-web.onrender.com
+
+if APP_URL and APP_URL.startswith('https://'):
+    # PRODUCTION — use webhooks (no polling threads = much less RAM!)
+    try:
+        from bot import init_webhooks, send_payment_reminders
+        t = threading.Thread(target=lambda: (init_webhooks(APP_URL)), daemon=True)
+        t.start()
+        print(f"Telegram bots: WEBHOOK mode → {APP_URL}")
+
+        # Schedule daily payment reminders at 09:00
+        from apscheduler.schedulers.background import BackgroundScheduler
+        sched = BackgroundScheduler()
+        sched.add_job(send_payment_reminders, 'cron', hour=9, minute=0)
+        sched.start()
+        print("Payment reminder scheduler started (09:00 daily).")
+    except Exception as e:
+        print("Webhook init failed:", e)
+else:
+    # LOCAL DEV — use polling (easier to test)
+    try:
+        from bot import supervisor_loop
+        bt = threading.Thread(target=supervisor_loop, daemon=True)
+        bt.start()
+        print("Telegram bots: POLLING mode (local dev)")
+    except Exception as e:
+        print("Bot polling start failed:", e)
+
+# Super Admin Control Bot (always polling, single bot)
 try:
     from superadmin_bot import start_superadmin_bot
-    sa_bot_thread = threading.Thread(target=start_superadmin_bot, daemon=True)
-    sa_bot_thread.start()
-    print("Super Admin control bot thread started successfully.")
+    sa_thread = threading.Thread(target=start_superadmin_bot, daemon=True)
+    sa_thread.start()
+    print("Super Admin control bot started.")
 except Exception as e:
-    print("Failed to start Super Admin bot thread:", e)
+    print("Super Admin bot failed:", e)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=3000)

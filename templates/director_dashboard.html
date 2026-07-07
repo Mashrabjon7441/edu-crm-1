@@ -32,6 +32,33 @@
     </div>
 </div>
 
+<!-- E'lon yuborish paneli -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4 border-0 shadow-sm border-start border-4 border-warning">
+            <h5 class="fw-bold mb-3"><i class="fas fa-bullhorn me-2 text-warning"></i>Barcha o'quvchilarga Telegram
+                E'lon Yuborish</h5>
+            <form action="{{ url_for('send_announcement_route') }}" method="POST" class="row g-2">
+                <div class="col-md-9">
+                    <textarea name="message" class="form-control" rows="2"
+                        placeholder="E'lon matni... (barcha Telegram orqali yozilgan o'quvchilariga yuboriladi)"
+                        required></textarea>
+                </div>
+                <div class="col-md-3 d-flex align-items-start">
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">
+                        <i class="fas fa-paper-plane me-1"></i> Yuborish
+                    </button>
+                </div>
+            </form>
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert alert-info mt-2 mb-0 py-2">{{ messages[0] }}</div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
 <!-- Stats -->
 <div class="row g-4 mb-4">
     <div class="col-md-3">
