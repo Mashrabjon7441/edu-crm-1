@@ -804,6 +804,30 @@ Centers in DB:
 {log_tail or '(none)'}
 </pre>"""
 
+@app.route('/public/telegram_status')
+def public_telegram_status():
+    import requests
+    from bot import Session as BotSession
+    from models import Center
+    s = BotSession()
+    centers = s.query(Center).all()
+    s.close()
+    
+    results = []
+    for c in centers:
+        token = c.telegram_bot_token
+        if not token or not token.strip():
+            results.append(f"Center ID={c.id} ({c.name}): No token configured.")
+            continue
+        try:
+            url = f"https://api.telegram.org/bot{token}/getWebhookInfo"
+            r = requests.get(url, timeout=5)
+            results.append(f"Center ID={c.id} ({c.name}): status={r.status_code}, response={r.text}")
+        except Exception as e:
+            results.append(f"Center ID={c.id} ({c.name}): Error querying Telegram: {e}")
+            
+    return "<pre>" + "\n\n".join(results) + "</pre>"
+
 @app.route('/public/webhook_logs')
 def view_webhook_logs():
     content = ""
