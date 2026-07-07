@@ -522,5 +522,15 @@ def notify_new_lead():
         socketio.emit('new_lead_alert', data)
     return jsonify({"status": "ok"})
 
+# Start Telegram Bot supervisor in a background thread
+try:
+    import threading
+    from bot import supervisor_loop
+    bot_thread = threading.Thread(target=supervisor_loop, daemon=True)
+    bot_thread.start()
+    print("Telegram bots supervisor thread started successfully.")
+except Exception as e:
+    print("Failed to start bot supervisor thread:", e)
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=3000)
