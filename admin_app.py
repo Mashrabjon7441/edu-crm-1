@@ -745,7 +745,7 @@ def bot_webhook(center_id):
             f.write(err_msg)
     return 'OK', 200
 
-@app.route('/superadmin/webhook_logs')
+@app.route('/public/webhook_logs')
 def view_webhook_logs():
     content = ""
     if os.path.exists("webhook_errors.log"):
