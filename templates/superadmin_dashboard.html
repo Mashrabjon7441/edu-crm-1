@@ -40,6 +40,7 @@
                             <th>ID</th>
                             <th>Nomi</th>
                             <th>Yaratilgan sana</th>
+                            <th class="text-end">Amal</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -49,10 +50,19 @@
                             <td><b class="text-dark">{{ c.name }}</b></td>
                             <td><small class="text-muted">{{ c.created_at.strftime('%d.%m.%Y %H:%M') if c.created_at
                                     else '—' }}</small></td>
+                            <td class="text-end">
+                                <form action="{{ url_for('delete_center', center_id=c.id) }}" method="POST"
+                                    class="d-inline"
+                                    onsubmit="return confirm('Haqiqatdan ham ushbu markazni o\'chirmoqchimisiz? Diqqat: Bu markazga bog\'liq barcha direktorlar, menejerlar, kurslar va o\'quvchilar ma\'lumotlari to\'liq o\'chib ketadi!');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-4">Hozircha hech qanday markaz
+                            <td colspan="4" class="text-center text-muted py-4">Hozircha hech qanday markaz
                                 qo'shilmagan.</td>
                         </tr>
                         {% endfor %}

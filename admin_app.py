@@ -170,6 +170,53 @@ def add_center():
         session.add(Center(name=center_name))
         session.commit()
         flash(f"Yangi o'quv markazi qo'shildi: {center_name}")
+    session.close()
+    return redirect(url_for('superadmin_dashboard'))
+
+@app.route('/superadmin/center/delete/<int:center_id>', methods=['POST'])
+@login_required
+def delete_center(center_id):
+    if current_user.role != 'superadmin': return redirect(url_for('index'))
+    session = Session()
+    center = session.get(Center, center_id)
+    if not center:
+        session.close()
+        flash("O'quv markazi topilmadi!")
+        return redirect(url_for('superadmin_dashboard'))
+    
+    name = center.name
+    try:
+        # Delete ActivityLogs
+        session.query(ActivityLog).filter_by(center_id=center_id).delete()
+        
+        # Get Course and Student IDs to delete Attendances & Enrollments safely
+        course_ids = [c.id for c in session.query(Course).filter_by(center_id=center_id).all()]
+        student_ids = [s.id for s in session.query(Student).filter_by(center_id=center_id).all()]
+        
+        if course_ids:
+            session.query(Attendance).filter(Attendance.course_id.in_(course_ids)).delete(synchronize_session=False)
+            session.query(Enrollment).filter(Enrollment.course_id.in_(course_ids)).delete(synchronize_session=False)
+            
+        if student_ids:
+            session.query(Attendance).filter(Attendance.student_id.in_(student_ids)).delete(synchronize_session=False)
+            session.query(Enrollment).filter(Enrollment.student_id.in_(student_ids)).delete(synchronize_session=False)
+            
+        # Delete Categories, Admins, Teachers, Students, Courses
+        session.query(Category).filter_by(center_id=center_id).delete()
+        session.query(Admin).filter_by(center_id=center_id).delete()
+        session.query(Teacher).filter_by(center_id=center_id).delete()
+        session.query(Student).filter_by(center_id=center_id).delete()
+        session.query(Course).filter_by(center_id=center_id).delete()
+        
+        # Delete Center itself
+        session.delete(center)
+        session.commit()
+        flash(f"O'quv markazi '{name}' va uning barcha ma'lumotlari to'liq o'chirib tashlandi!")
+    except Exception as e:
+        session.rollback()
+        flash(f"Xatolik yuz berdi: {str(e)}")
+    finally:
+        session.close()
     return redirect(url_for('superadmin_dashboard'))
 
 @app.route('/superadmin/director/add', methods=['POST'])
