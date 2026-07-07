@@ -223,20 +223,50 @@
             {% if current_user.is_authenticated %}
             <div class="collapse navbar-collapse" id="mainNavbar">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if current_user.role == 'superadmin' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manager_dashboard') }}"><i class="fas fa-tasks me-1"></i>
-                            Boshqaruv</a>
+                        <a class="nav-link fw-bold text-primary" href="{{ url_for('superadmin_dashboard') }}">
+                            <i class="fas fa-user-shield me-1"></i> Super Admin Panel
+                        </a>
+                    </li>
+                    {% elif current_user.role == 'director' %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold" href="{{ url_for('director_dashboard') }}">
+                            <i class="fas fa-chart-line me-1"></i> Director Dashboard
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link fw-bold text-dark" href="#" data-bs-toggle="modal"
-                            data-bs-target="#allStudentsModal">
+                        <a class="nav-link" href="{{ url_for('manager_dashboard') }}">
+                            <i class="fas fa-tasks me-1"></i> Manager Boshqaruv
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
                             <i class="fas fa-users me-1 text-success"></i> O'quvchilar & To'lovlar
                         </a>
                     </li>
+                    {% elif current_user.role == 'manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold" href="{{ url_for('manager_dashboard') }}">
+                            <i class="fas fa-tasks me-1"></i> Boshqaruv
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
+                            <i class="fas fa-users me-1 text-success"></i> O'quvchilar & To'lovlar
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i> Bosh sahifa
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <div class="d-flex align-items-center">
-                    <span class="me-3 small text-muted d-none d-lg-inline">Salom, <b>{{ current_user.username
-                            }}</b></span>
+                    <span class="me-3 small text-muted d-none d-lg-inline">Salom, <b class="text-capitalize">{{
+                            current_user.username }}</b> ({{ current_user.role }})</span>
                     <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Chiqish</a>
                 </div>
             </div>
