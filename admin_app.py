@@ -36,18 +36,26 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id_str):
-    session = Session()
     try:
         parts = user_id_str.split(':')
-        if len(parts) != 2: return None
+        if len(parts) != 2:
+            return None
         u_type, u_id = parts[0], int(parts[1])
-        if u_type == 'admin':
-            return session.get(Admin, u_id)
-        elif u_type == 'teacher':
-            return session.get(Teacher, u_id)
-    except:
+        session = session_factory()
+        try:
+            if u_type == 'admin':
+                user = session.get(Admin, u_id)
+            elif u_type == 'teacher':
+                user = session.get(Teacher, u_id)
+            else:
+                return None
+            if user:
+                session.expunge(user)
+            return user
+        finally:
+            session.close()
+    except Exception:
         return None
-    return None
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
