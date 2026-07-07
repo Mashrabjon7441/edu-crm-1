@@ -201,12 +201,14 @@ def delete_center(center_id):
             session.query(Attendance).filter(Attendance.student_id.in_(student_ids)).delete(synchronize_session=False)
             session.query(Enrollment).filter(Enrollment.student_id.in_(student_ids)).delete(synchronize_session=False)
             
-        # Delete Categories, Admins, Teachers, Students, Courses
+        # Delete Course (which references Teacher) BEFORE deleting Teacher
+        session.query(Course).filter_by(center_id=center_id).delete()
+        session.query(Teacher).filter_by(center_id=center_id).delete()
+        
+        # Delete Categories, Admins, Students
         session.query(Category).filter_by(center_id=center_id).delete()
         session.query(Admin).filter_by(center_id=center_id).delete()
-        session.query(Teacher).filter_by(center_id=center_id).delete()
         session.query(Student).filter_by(center_id=center_id).delete()
-        session.query(Course).filter_by(center_id=center_id).delete()
         
         # Delete Center itself
         session.delete(center)
