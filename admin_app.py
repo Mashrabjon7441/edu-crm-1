@@ -316,6 +316,31 @@ def delete_director(director_id):
     session.close()
     return redirect(url_for('superadmin_dashboard'))
 
+@app.route('/superadmin/webhooks/sync', methods=['POST'])
+@login_required
+def sync_webhooks_route():
+    if current_user.role != 'superadmin': return redirect(url_for('index'))
+    
+    # Get current host URL and fallback
+    APP_URL = os.getenv('APP_URL', '').strip()
+    if not APP_URL:
+        APP_URL = os.getenv('RENDER_EXTERNAL_URL', '').strip()
+    if not APP_URL:
+        APP_URL = request.url_root.strip()
+        if 'localhost' not in APP_URL and '127.0.0.1' not in APP_URL:
+            APP_URL = APP_URL.replace('http://', 'https://')
+            
+    if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
+        try:
+            from bot import init_webhooks
+            init_webhooks(APP_URL)
+            flash(f"Barcha bot webhooklari muvaffaqiyatli qayta tiklandi: {APP_URL}")
+        except Exception as e:
+            flash(f"Webhook tiklashda xato yuz berdi: {e}")
+    else:
+        flash("Webhook faqat jonli / production (HTTPS) serverda ishlaydi!")
+    return redirect(url_for('superadmin_dashboard'))
+
 # --- Manager/Director Dashboard ---
 @app.route('/manager')
 @login_required
@@ -735,9 +760,11 @@ def send_announcement_route():
 # ── Startup: Webhook (production) or Polling (local)
 import threading
 
-APP_URL = os.getenv('APP_URL', '').strip()  # e.g. https://edu-crm-web.onrender.com
+APP_URL = os.getenv('APP_URL', '').strip()
+if not APP_URL:
+    APP_URL = os.getenv('RENDER_EXTERNAL_URL', '').strip()
 
-if APP_URL and APP_URL.startswith('https://'):
+if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
     # PRODUCTION — use webhooks (no polling threads = much less RAM!)
     try:
         from bot import init_webhooks, send_payment_reminders
@@ -754,14 +781,17 @@ if APP_URL and APP_URL.startswith('https://'):
     except Exception as e:
         print("Webhook init failed:", e)
 else:
-    # LOCAL DEV — use polling (easier to test)
-    try:
-        from bot import supervisor_loop
-        bt = threading.Thread(target=supervisor_loop, daemon=True)
-        bt.start()
-        print("Telegram bots: POLLING mode (local dev)")
-    except Exception as e:
-        print("Bot polling start failed:", e)
+    # LOCAL DEV — use polling ONLY if RUN_LOCAL_BOTS=true is set (to prevent local workspace from breaking production webhooks)
+    if os.getenv('RUN_LOCAL_BOTS', 'false').lower() == 'true':
+        try:
+            from bot import supervisor_loop
+            bt = threading.Thread(target=supervisor_loop, daemon=True)
+            bt.start()
+            print("Telegram bots: POLLING mode (local dev) active.")
+        except Exception as e:
+            print("Bot polling start failed:", e)
+    else:
+        print("Telegram bots: POLLING mode disabled locally to avoid production Webhook conflicts. Set RUN_LOCAL_BOTS=true in .env to enable.")
 
 # Super Admin Control Bot (always polling, single bot)
 try:
