@@ -72,6 +72,19 @@ def hash_password_if_needed(password):
         return password
     return generate_password_hash(password)
 
+def log_action(session, center_id, user_name, user_role, action, details=None):
+    """Record an activity log entry for director monitoring."""
+    try:
+        session.add(ActivityLog(
+            center_id=center_id,
+            user_name=user_name,
+            user_role=user_role,
+            action=action,
+            details=details
+        ))
+    except Exception as e:
+        print("log_action error:", e)
+
 # --- Routes ---
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -220,17 +233,20 @@ def add_manual_student():
     center_id = current_user.center_id
     phone = request.form.get('phone_number')
     course_id = int(request.form.get('course_id'))
-    
+
     course = session.get(Course, course_id)
     if not course or course.center_id != center_id:
         flash("Ruxsat berilmagan guruh!")
         return redirect(url_for('manager_dashboard'))
-        
+
     s = session.query(Student).filter_by(phone_number=phone, center_id=center_id).first()
+    full_name = request.form.get('full_name')
     if not s:
-        s = Student(full_name=request.form.get('full_name'), phone_number=phone, center_id=center_id)
+        s = Student(full_name=full_name, phone_number=phone, center_id=center_id, added_by=current_user.username)
         session.add(s); session.flush()
     session.add(Enrollment(student_id=s.id, course_id=course_id, status='accepted', joined_date=date.today(), next_payment_date=date.today() + timedelta(days=30)))
+    log_action(session, center_id, current_user.username, current_user.role,
+               "O'quvchi qo'shildi", f"{full_name} → {course.title}")
     session.commit()
     flash(f"Muvaffaqiyatli qo'shildi.")
     return redirect(url_for('manager_dashboard'))
@@ -245,6 +261,8 @@ def accept_lead():
         en.status = 'accepted'
         en.joined_date = datetime.strptime(request.form.get('joined_date'), '%Y-%m-%d').date()
         en.next_payment_date = en.joined_date + timedelta(days=30)
+        log_action(session, current_user.center_id, current_user.username, current_user.role,
+                   "Ariza qabul qilindi", f"{en.student.full_name} → {en.course.title}")
         session.commit()
     return redirect(url_for('manager_dashboard'))
 
@@ -293,7 +311,8 @@ def director_dashboard():
         'total_teachers': len(teachers),
         'total_managers': len(managers)
     }
-    return render_template('director_dashboard.html', courses=courses, stats=stats, teachers=teachers, managers=managers, all_students=students)
+    logs = session.query(ActivityLog).filter_by(center_id=center_id).order_by(ActivityLog.created_at.desc()).limit(100).all()
+    return render_template('director_dashboard.html', courses=courses, stats=stats, teachers=teachers, managers=managers, all_students=students, logs=logs)
 
 @app.route('/director/manager/update', methods=['POST'])
 @login_required
@@ -318,7 +337,10 @@ def update_manager_login():
 @login_required
 def add_teacher():
     session = Session()
-    session.add(Teacher(full_name=request.form.get('full_name'), subject=request.form.get('subject'), username=request.form.get('username'), password_hash=hash_password_if_needed(request.form.get('password')), center_id=current_user.center_id))
+    full_name = request.form.get('full_name')
+    session.add(Teacher(full_name=full_name, subject=request.form.get('subject'), username=request.form.get('username'), password_hash=hash_password_if_needed(request.form.get('password')), center_id=current_user.center_id))
+    log_action(session, current_user.center_id, current_user.username, current_user.role,
+               "O'qituvchi qo'shildi", full_name)
     session.commit()
     return redirect(url_for('manager_dashboard'))
 
@@ -328,6 +350,8 @@ def delete_teacher(tid):
     session = Session()
     t = session.query(Teacher).filter_by(id=tid, center_id=current_user.center_id).first()
     if t:
+        log_action(session, current_user.center_id, current_user.username, current_user.role,
+                   "O'qituvchi o'chirildi", t.full_name)
         session.query(Course).filter_by(teacher_id=tid, center_id=current_user.center_id).update({"teacher_id": None})
         session.delete(t); session.commit()
     return redirect(request.referrer or url_for('manager_dashboard'))
@@ -361,7 +385,10 @@ def delete_category(cat_name):
 @login_required
 def add_course():
     session = Session()
-    session.add(Course(title=request.form.get('title'), teacher_id=request.form.get('teacher_id'), start_date=request.form.get('start_date'), schedule_time=request.form.get('schedule_time'), max_students=request.form.get('max_students'), category=request.form.get('category'), days=request.form.get('days'), center_id=current_user.center_id))
+    title = request.form.get('title')
+    session.add(Course(title=title, teacher_id=request.form.get('teacher_id'), start_date=request.form.get('start_date'), schedule_time=request.form.get('schedule_time'), max_students=request.form.get('max_students'), category=request.form.get('category'), days=request.form.get('days'), center_id=current_user.center_id))
+    log_action(session, current_user.center_id, current_user.username, current_user.role,
+               "Guruh ochildi", title)
     session.commit()
     return redirect(url_for('manager_dashboard'))
 
@@ -381,6 +408,8 @@ def reject_lead(eid):
     session = Session()
     en = session.query(Enrollment).join(Course).filter(Enrollment.id == eid, Course.center_id == current_user.center_id).first()
     if en:
+        log_action(session, current_user.center_id, current_user.username, current_user.role,
+                   "Ariza rad etildi", f"{en.student.full_name} ({en.course.title})")
         en.status = 'rejected'
         session.commit()
     return redirect(request.referrer or url_for('manager_dashboard'))

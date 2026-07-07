@@ -182,7 +182,13 @@ def supervisor_loop():
                                     restart_on_change=False
                                 )
                             except Exception as e:
+                                err_msg = f"\u26a0\ufe0f Bot xatosi!\n🏫 Markaz: {cname}\n❌ Xato: {str(e)[:300]}\n\n\U0001f504 15 soniyadan so'ng qayta ulanmoqda..."
                                 print(f"Bot for '{cname}' crashed: {e}. Restarting in 15s...")
+                                try:
+                                    from superadmin_bot import send_superadmin_notification
+                                    send_superadmin_notification(err_msg)
+                                except Exception:
+                                    pass
                                 time.sleep(15)
 
                     t = threading.Thread(target=run_bot, daemon=True)

@@ -77,6 +77,11 @@
         <button class="nav-link" id="students-tab" data-bs-toggle="pill" data-bs-target="#students">Barcha
             O'quvchilar</button>
     </li>
+    <li class="nav-item">
+        <button class="nav-link" id="logs-tab" data-bs-toggle="pill" data-bs-target="#logs">
+            <i class="fas fa-history me-1"></i>Faoliyat Jurnali
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content">
@@ -229,6 +234,63 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Faoliyat Jurnali -->
+<div class="tab-pane fade" id="logs">
+    <div class="card shadow-sm border-0 overflow-hidden">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-history me-2"></i> Menejer Faoliyat Jurnali</span>
+            <span class="badge bg-secondary">Oxirgi 100 ta</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:150px">Vaqt</th>
+                        <th>Foydalanuvchi</th>
+                        <th>Rol</th>
+                        <th>Amal</th>
+                        <th>Tafsilot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="text-muted">{{ log.created_at.strftime('%d.%m %H:%M') }}</td>
+                        <td><b>{{ log.user_name }}</b></td>
+                        <td>
+                            {% if log.user_role == 'manager' %}
+                            <span class="badge bg-primary">Menejer</span>
+                            {% elif log.user_role == 'director' %}
+                            <span class="badge bg-dark">Direktor</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ log.user_role }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if 'o\'chirildi' in log.action or 'rad' in log.action %}
+                            <span class="text-danger fw-bold">{{ log.action }}</span>
+                            {% elif 'qo\'shildi' in log.action or 'qabul' in log.action or 'ochildi' in log.action %}
+                            <span class="text-success fw-bold">{{ log.action }}</span>
+                            {% else %}
+                            <span>{{ log.action }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ log.details or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">Hozircha hech qanday faoliyat qayd
+                            etilmagan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 </div>
 
 {% endblock %}
