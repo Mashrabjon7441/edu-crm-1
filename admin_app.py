@@ -16,14 +16,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "crm_pipeline_single_center_103")
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# Database Setup - PostgreSQL in production, SQLite locally
-DATABASE_URL = os.getenv("DATABASE_URL", f'sqlite:///{os.path.join(os.path.abspath(os.path.dirname(__file__)), "crm.db")}')
-# Render.com provides postgres:// but SQLAlchemy needs postgresql://
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
-session_factory = sessionmaker(bind=engine, expire_on_commit=False)
-Session = scoped_session(session_factory)
+from db_setup import Session, engine
 
 # Bot Setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -120,7 +113,7 @@ def logout():
 def setup_admin():
     """Temporary one-time setup endpoint. Remove after first use."""
     try:
-        s = session_factory()
+        s = Session()
         sa_user = os.getenv("SUPERADMIN_USER", "Mashrabjon")
         sa_pass = os.getenv("SUPERADMIN_PASS", "MAshRAbjONoo05")
         sa = s.query(Admin).filter_by(role='superadmin').first()

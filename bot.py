@@ -11,13 +11,7 @@ from datetime import date, timedelta
 
 load_dotenv()
 
-# Database Setup
-DATABASE_URL = os.getenv("DATABASE_URL", f'sqlite:///{os.path.join(os.path.abspath(os.path.dirname(__file__)), "crm.db")}')
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}, pool_size=5, max_overflow=10)
-session_factory = sessionmaker(bind=engine)
-Session = scoped_session(session_factory)
+from db_setup import Session
 
 user_data = {}
 
@@ -312,7 +306,7 @@ def register_center_webhook(center, app_url):
         webhook_url = f"{app_url.rstrip('/')}/bot_webhook/{center.id}"
         bot.remove_webhook()
         time.sleep(0.5)
-        bot.set_webhook(url=webhook_url)
+        bot.set_webhook(url=webhook_url, allowed_updates=['message', 'callback_query'])
         active_bots[center.id] = bot
         print(f"✅ Webhook set: {center.name} (id={center.id}) → {webhook_url}")
     except Exception as e:
