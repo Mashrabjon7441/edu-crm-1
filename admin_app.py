@@ -97,7 +97,13 @@ def fetch_bot_username(token):
         print(f"Failed to fetch bot username: {e}")
         return None
 
-# --- Routes ---
+@app.route('/version')
+def app_version():
+    return jsonify({
+        "status": "online",
+        "version": "1.0.3",
+        "build_date": "2026-07-09 18:08"
+    })
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
