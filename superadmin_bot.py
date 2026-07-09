@@ -9,14 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database Setup
-DATABASE_URL = os.getenv("DATABASE_URL", f'sqlite:///{os.path.join(os.path.abspath(os.path.dirname(__file__)), "crm.db")}')
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+from db_setup import Session
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
-session_factory = sessionmaker(bind=engine)
-Session = scoped_session(session_factory)
 
 SUPERADMIN_TELEGRAM_ID = 7637932499
 TOKEN = os.getenv("SUPERADMIN_BOT_TOKEN")
