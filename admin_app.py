@@ -852,6 +852,58 @@ def send_announcement_route():
     flash(f"✅ E'lon {sent} ta o'quvchiga yuborildi!" if not err else f"⚠️ Xato: {err}")
     return redirect(url_for('director_dashboard') + '#logs')
 
+def send_daily_stats_to_superadmin():
+    """Calculate daily registrations (leads/students) and send report to Super Admin at 22:00 Tashkent time."""
+    from models import Student, Enrollment, Center
+    from datetime import date, datetime
+    
+    session = Session()
+    try:
+        today = date.today()
+        # Find enrollments created today (UTC timestamp based)
+        start_of_today = datetime.combine(today, datetime.min.time())
+        
+        new_leads = session.query(Enrollment).filter(
+            Enrollment.status == 'waitlisted',
+            Enrollment.created_at >= start_of_today
+        ).all()
+        
+        new_students = session.query(Enrollment).filter(
+            Enrollment.status == 'accepted',
+            Enrollment.created_at >= start_of_today
+        ).all()
+        
+        centers = session.query(Center).all()
+        
+        text = "📊 <b>Kunlik Tizim Statistikasi (Bugungi):</b>\n\n"
+        total_leads = len(new_leads)
+        total_accepted = len(new_students)
+        
+        text += f"🆕 Bugun jami arizalar: <b>{total_leads} ta</b>\n"
+        text += f"✅ Bugun qabul qilinganlar: <b>{total_accepted} ta</b>\n\n"
+        
+        text += "🏫 <b>Markazlar bo'yicha batafsil:</b>\n"
+        for c in centers:
+            c_leads = sum(1 for e in new_leads if e.course and e.course.center_id == c.id)
+            c_accepted = sum(1 for e in new_students if e.course and e.course.center_id == c.id)
+            text += f"• <b>{c.name}</b>:\n"
+            text += f"  📥 Arizalar: {c_leads} ta\n"
+            text += f"  🟢 Qabul: {c_accepted} ta\n"
+            
+        SUPERADMIN_BOT_TOKEN = os.getenv("SUPERADMIN_BOT_TOKEN")
+        SUPERADMIN_TELEGRAM_ID = 7637932499
+        if SUPERADMIN_BOT_TOKEN:
+            import telebot
+            bot = telebot.TeleBot(SUPERADMIN_BOT_TOKEN)
+            bot.send_message(SUPERADMIN_TELEGRAM_ID, text, parse_mode="HTML")
+            print("Daily stats sent to Super Admin via bot.")
+        else:
+            print("SUPERADMIN_BOT_TOKEN not found in environment.")
+    except Exception as e:
+        print("Error sending daily stats to Super Admin:", e)
+    finally:
+        session.close()
+
 # ── Startup: Webhook (production) or Polling (local)
 import threading
 
@@ -868,12 +920,13 @@ if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
         _init_thread_ref = _init_thread  # expose to status endpoint
         print(f"Telegram bots: WEBHOOK mode → {APP_URL} (initializing in background...)")
 
-        # Schedule daily payment reminders at 09:00
+        # Schedule daily tasks
         from apscheduler.schedulers.background import BackgroundScheduler
         sched = BackgroundScheduler()
         sched.add_job(send_payment_reminders, 'cron', hour=9, minute=0)
+        sched.add_job(send_daily_stats_to_superadmin, 'cron', hour=22, minute=0, timezone='Asia/Tashkent')
         sched.start()
-        print("Payment reminder scheduler started (09:00 daily).")
+        print("Scheduler started (09:00 payment reminders, 22:00 daily stats Tashkent time).")
     except Exception as e:
         print("Webhook init failed:", e)
 else:
