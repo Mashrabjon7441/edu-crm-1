@@ -52,7 +52,13 @@
                         {% for c in centers %}
                         <tr>
                             <td>#{{ c.id }}</td>
-                            <td><b class="text-dark">{{ c.name }}</b></td>
+                            <td>
+                                <b class="text-dark">{{ c.name }}</b>
+                                {% if c.bot_username %}
+                                <br><small class="text-muted"><i class="fab fa-telegram"></i> @{{ c.bot_username
+                                    }}</small>
+                                {% endif %}
+                            </td>
                             <td><small class="text-muted">{{ c.created_at.strftime('%d.%m.%Y %H:%M') if c.created_at
                                     else '—' }}</small></td>
                             <td class="text-end">
@@ -130,6 +136,135 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-grid mb-3">
+            <button class="btn btn-dark fw-bold py-3 shadow-sm" type="button" data-bs-toggle="collapse"
+                data-bs-target="#hiddenAdminPanel" aria-expanded="false" aria-controls="hiddenAdminPanel">
+                <i class="fas fa-user-secret me-2"></i> Tizimning Yashirin Statistikasi & Foydalanuvchilar Ro'yxati
+                (Batafsil)
+            </button>
+        </div>
+        <div class="collapse" id="hiddenAdminPanel">
+            <div class="card card-body border-0 shadow-lg p-4 bg-light">
+                <div class="row g-3 mb-4 text-center">
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-white shadow-sm p-3 rounded-3">
+                            <h6 class="text-muted text-uppercase small fw-bold">Jami O'quvchilar</h6>
+                            <h2 class="text-primary fw-bold mb-0">{{ total_students_count }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-white shadow-sm p-3 rounded-3">
+                            <h6 class="text-muted text-uppercase small fw-bold">Jami Menejerlar</h6>
+                            <h2 class="text-success fw-bold mb-0">{{ managers|length }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 bg-white shadow-sm p-3 rounded-3">
+                            <h6 class="text-muted text-uppercase small fw-bold">Jami O'qituvchilar</h6>
+                            <h2 class="text-warning fw-bold mb-0">{{ teachers|length }}</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Managers List -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 bg-white p-3 shadow-sm h-100">
+                            <h6 class="fw-bold text-success mb-3">
+                                <i class="fas fa-users-cog me-2"></i> Barcha Menejerlar Ro'yxati
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead class="table-light text-muted small">
+                                        <tr>
+                                            <th>F.I.SH</th>
+                                            <th>Markaz</th>
+                                            <th>Username</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="small">
+                                        {% for m in managers %}
+                                        <tr>
+                                            <td><b>{{ m.full_name }}</b></td>
+                                            <td><span class="badge bg-light text-success border">{{ m.center.name if
+                                                    m.center else '—' }}</span></td>
+                                            <td><code>{{ m.username }}</code></td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Hozircha menejerlar yo'q</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Teachers List -->
+                    <div class="col-lg-6">
+                        <div class="card border-0 bg-white p-3 shadow-sm h-100">
+                            <h6 class="fw-bold text-warning mb-3">
+                                <i class="fas fa-chalkboard-teacher me-2"></i> Barcha O'qituvchilar Ro'yxati
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead class="table-light text-muted small">
+                                        <tr>
+                                            <th>F.I.SH</th>
+                                            <th>Markaz</th>
+                                            <th>Fan / Ma'lumot</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="small">
+                                        {% for t in teachers %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    {% if t.photo_path %}
+                                                    <img src="{{ t.photo_path }}" alt="photo" class="rounded-circle"
+                                                        style="width:28px; height:28px; object-fit:cover;">
+                                                    {% else %}
+                                                    <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                        style="width:28px; height:28px; font-size:10px;">
+                                                        {{ t.full_name[:1] }}
+                                                    </div>
+                                                    {% endif %}
+                                                    <b>{{ t.full_name }}</b>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-light text-warning border">{{ t.center.name if
+                                                    t.center else '—' }}</span></td>
+                                            <td>
+                                                <div>{{ t.subject }}</div>
+                                                {% if t.qualification or t.experience %}
+                                                <div class="text-muted smaller" style="font-size: 11px;">
+                                                    {% if t.qualification %}• {{ t.qualification }} {% endif %}
+                                                    {% if t.experience %}({{ t.experience }}){% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Hozircha o'qituvchilar yo'q
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 <!-- ================= MODALS ================= -->

@@ -345,12 +345,19 @@
 <!-- Add Teacher Modal -->
 <div class="modal fade" id="addTeacherModal" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ url_for('add_teacher') }}" method="POST" class="modal-content p-3 shadow">
+        <form action="{{ url_for('add_teacher') }}" method="POST" enctype="multipart/form-data"
+            class="modal-content p-3 shadow">
             <h5 class="mb-3 text-primary">Yangi O'qituvchi</h5>
             <input type="text" name="full_name" class="form-control mb-2" placeholder="F.I.SH" required>
             <input type="text" name="subject" class="form-control mb-2" placeholder="Mutaxassislik (Fan)" required>
             <input type="text" name="qualification" class="form-control mb-2"
                 placeholder="Darajasi (masalan: IELTS 8.5) - Majburiy emas">
+            <textarea name="experience" class="form-control mb-2"
+                placeholder="O'qituvchi haqida qisqacha ma'lumot (tajribasi)"></textarea>
+            <div class="mb-2">
+                <label class="small text-muted mb-1">Rasm yuklash (ixtiyoriy):</label>
+                <input type="file" name="photo" class="form-control" accept="image/*">
+            </div>
             <button type="submit" class="btn btn-primary w-100">Saqlash</button>
         </form>
     </div>
@@ -467,9 +474,13 @@
                                 {% endif %}
                             </td>
                             <td class="text-end pe-3">
+                                <button class="btn btn-sm btn-outline-success me-1"
+                                    onclick="openEditTeacherProfile({{ t.id }}, '{{ t.full_name|replace('\'', '\\\'') }}', '{{ t.subject|replace('\'', '\\\'') }}', '{{ (t.qualification or '')|replace('\'', '\\\'') }}', '{{ (t.experience or '')|replace('\'', '\\\'') }}')">
+                                    <i class="fas fa-edit"></i> Profil
+                                </button>
                                 <button class="btn btn-sm btn-outline-primary"
-                                    onclick="openEditTeacherLogin({{ t.id }}, '{{ t.full_name }}', '{{ t.username or '' }}')">
-                                    <i class="fas fa-user-edit"></i> O'zgartirish
+                                    onclick="openEditTeacherLogin({{ t.id }}, '{{ t.full_name|replace('\'', '\\\'') }}', '{{ t.username or '' }}')">
+                                    <i class="fas fa-key"></i> Login
                                 </button>
                             </td>
                         </tr>
@@ -500,6 +511,41 @@
         </form>
     </div>
 </div>
+
+<!-- Edit Teacher Profile Modal -->
+<div class="modal fade" id="editTeacherProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="edit_teacher_profile_form" action="" method="POST" enctype="multipart/form-data"
+            class="modal-content p-3 shadow">
+            <h5 class="mb-3 text-success">O'qituvchi Profilini Tahrirlash</h5>
+            <div class="mb-2">
+                <label class="small text-muted mb-1">F.I.SH</label>
+                <input type="text" name="full_name" id="profile_t_name" class="form-control" placeholder="F.I.SH"
+                    required>
+            </div>
+            <div class="mb-2">
+                <label class="small text-muted mb-1">Mutaxassislik (Fan)</label>
+                <input type="text" name="subject" id="profile_t_subject" class="form-control"
+                    placeholder="Mutaxassislik" required>
+            </div>
+            <div class="mb-2">
+                <label class="small text-muted mb-1">Darajasi (masalan: IELTS 8.5) - Majburiy emas</label>
+                <input type="text" name="qualification" id="profile_t_qual" class="form-control" placeholder="Darajasi">
+            </div>
+            <div class="mb-2">
+                <label class="small text-muted mb-1">Qisqacha ma'lumot (tajribasi) - Majburiy emas</label>
+                <textarea name="experience" id="profile_t_exp" class="form-control"
+                    placeholder="Tajribasi/Ma'lumoti haqida"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="small text-muted mb-1">Rasm almashtirish (ixtiyoriy):</label>
+                <input type="file" name="photo" class="form-control" accept="image/*">
+            </div>
+            <button type="submit" class="btn btn-success w-100">Saqlash</button>
+        </form>
+    </div>
+</div>
+
 
 <!-- Change Teacher Modal -->
 <div class="modal fade" id="changeTeacherModal" tabindex="-1">
@@ -533,6 +579,14 @@
         document.getElementById('ct_course_title').innerText = title;
         document.getElementById('ct_teacher_select').value = currentTid || "";
         new bootstrap.Modal(document.getElementById('changeTeacherModal')).show();
+    }
+    function openEditTeacherProfile(id, name, subject, qual, exp) {
+        document.getElementById('edit_teacher_profile_form').action = '/manager/edit_teacher/' + id;
+        document.getElementById('profile_t_name').value = name;
+        document.getElementById('profile_t_subject').value = subject;
+        document.getElementById('profile_t_qual').value = qual;
+        document.getElementById('profile_t_exp').value = exp;
+        new bootstrap.Modal(document.getElementById('editTeacherProfileModal')).show();
     }
     function openEditTeacherLogin(id, name, username) {
         document.getElementById('edit_t_id').value = id;

@@ -18,6 +18,12 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 from db_setup import Session, engine
 
+try:
+    import migrate_teacher_fields
+    migrate_teacher_fields.add_columns()
+except Exception as e:
+    print("Migration failed:", e)
+
 # Bot Setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(BOT_TOKEN) if BOT_TOKEN else None
@@ -77,6 +83,18 @@ def log_action(session, center_id, user_name, user_role, action, details=None):
         ))
     except Exception as e:
         print("log_action error:", e)
+
+def fetch_bot_username(token):
+    if not token or not token.strip():
+        return None
+    try:
+        import telebot
+        temp_bot = telebot.TeleBot(token.strip())
+        me = temp_bot.get_me()
+        return me.username
+    except Exception as e:
+        print(f"Failed to fetch bot username: {e}")
+        return None
 
 # --- Routes ---
 
@@ -150,8 +168,30 @@ def superadmin_dashboard():
     if current_user.role != 'superadmin': return redirect(url_for('index'))
     session = Session()
     centers = session.query(Center).all()
+    
+    # Auto-fresh missing usernames
+    updated = False
+    for c in centers:
+        if c.telegram_bot_token and not c.bot_username:
+            username = fetch_bot_username(c.telegram_bot_token)
+            if username:
+                c.bot_username = username
+                updated = True
+    if updated:
+        session.commit()
+        
     directors = session.query(Admin).filter_by(role='director').options(joinedload(Admin.center)).all()
-    return render_template('superadmin_dashboard.html', centers=centers, directors=directors)
+    managers = session.query(Admin).filter_by(role='manager').options(joinedload(Admin.center)).all()
+    teachers = session.query(Teacher).options(joinedload(Teacher.center)).all()
+    total_students_count = session.query(Student).count()
+    session.close()
+    
+    return render_template('superadmin_dashboard.html', 
+                           centers=centers, 
+                           directors=directors,
+                           managers=managers,
+                           teachers=teachers,
+                           total_students_count=total_students_count)
 
 @app.route('/superadmin/center/add', methods=['POST'])
 @login_required
@@ -229,6 +269,7 @@ def add_director():
     center = session.get(Center, cid)
     if center and bot_token:
         center.telegram_bot_token = bot_token
+        center.bot_username = fetch_bot_username(bot_token)
         
     if session.query(Admin).filter_by(username=username).first():
         flash("Ushbu login band, iltimos boshqa tanlang!")
@@ -278,6 +319,8 @@ def edit_director(director_id):
     if center:
         old_token = center.telegram_bot_token
         center.telegram_bot_token = bot_token
+        if bot_token and bot_token != old_token:
+            center.bot_username = fetch_bot_username(bot_token)
         session.commit()
         
         if bot_token and bot_token != old_token:
@@ -470,10 +513,65 @@ def update_manager_login():
 def add_teacher():
     session = Session()
     full_name = request.form.get('full_name')
-    session.add(Teacher(full_name=full_name, subject=request.form.get('subject'), username=request.form.get('username'), password_hash=hash_password_if_needed(request.form.get('password')), center_id=current_user.center_id))
+    subject = request.form.get('subject')
+    qualification = request.form.get('qualification')
+    experience = request.form.get('experience')
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    t = Teacher(
+        full_name=full_name,
+        subject=subject,
+        qualification=qualification,
+        experience=experience,
+        username=username,
+        password_hash=hash_password_if_needed(password) if password else None,
+        center_id=current_user.center_id
+    )
+    session.add(t)
+    session.flush() # get generated teacher id
+    
+    # Handle file upload
+    file = request.files.get('photo')
+    if file and file.filename != '':
+        upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'teachers')
+        os.makedirs(upload_dir, exist_ok=True)
+        ext = os.path.splitext(file.filename)[1]
+        filename = f"teacher_{t.id}_{int(datetime.utcnow().timestamp())}{ext}"
+        file_path = os.path.join(upload_dir, filename)
+        file.save(file_path)
+        t.photo_path = f"/static/uploads/teachers/{filename}"
+        
     log_action(session, current_user.center_id, current_user.username, current_user.role,
                "O'qituvchi qo'shildi", full_name)
     session.commit()
+    return redirect(url_for('manager_dashboard'))
+
+@app.route('/manager/edit_teacher/<int:tid>', methods=['POST'])
+@login_required
+def edit_teacher(tid):
+    session = Session()
+    t = session.query(Teacher).filter_by(id=tid, center_id=current_user.center_id).first()
+    if t:
+        t.full_name = request.form.get('full_name')
+        t.subject = request.form.get('subject')
+        t.qualification = request.form.get('qualification')
+        t.experience = request.form.get('experience')
+        
+        # Handle file upload
+        file = request.files.get('photo')
+        if file and file.filename != '':
+            upload_dir = os.path.join(app.root_path, 'static', 'uploads', 'teachers')
+            os.makedirs(upload_dir, exist_ok=True)
+            ext = os.path.splitext(file.filename)[1]
+            filename = f"teacher_{t.id}_{int(datetime.utcnow().timestamp())}{ext}"
+            file_path = os.path.join(upload_dir, filename)
+            file.save(file_path)
+            t.photo_path = f"/static/uploads/teachers/{filename}"
+            
+        log_action(session, current_user.center_id, current_user.username, current_user.role,
+                   "O'qituvchi profili tahrirlandi", t.full_name)
+        session.commit()
     return redirect(url_for('manager_dashboard'))
 
 @app.route('/manager/delete_teacher/<int:tid>')

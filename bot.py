@@ -103,6 +103,10 @@ def make_bot(token, center_id):
                     call.message.chat.id, call.message.message_id,
                     reply_markup=markup, parse_mode="Markdown")
             except Exception:
+                try:
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                except Exception:
+                    pass
                 bot.send_message(call.message.chat.id, f"📂 *{sec}* bo'limida hozircha faol guruh yo'q.",
                     reply_markup=markup, parse_mode="Markdown")
             return
@@ -111,14 +115,85 @@ def make_bot(token, center_id):
             slots_left = (c.max_students or 15) - accepted
             emoji = "🟢" if slots_left > 3 else ("🟡" if slots_left > 0 else "🔴")
             label = f"{emoji} {c.title} | ⏰ {c.schedule_time} | Bo'sh joy: {slots_left}"
-            markup.add(types.InlineKeyboardButton(label, callback_data=f"enroll_{c.id}"))
+            markup.add(types.InlineKeyboardButton(label, callback_data=f"course_{c.id}"))
         markup.add(types.InlineKeyboardButton("🔙 Orqaga", callback_data="back_cats"))
         try:
             bot.edit_message_text(f"📂 *{sec}* guruhlari:", call.message.chat.id,
                 call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         except Exception:
+            try:
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+            except Exception:
+                pass
             bot.send_message(call.message.chat.id, f"📂 *{sec}* guruhlari:",
                 reply_markup=markup, parse_mode="Markdown")
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('course_'))
+    def view_course_detail(call):
+        bot.answer_callback_query(call.id)  # dismiss loading spinner
+        cid = int(call.data.replace('course_', '', 1))
+        session = Session()
+        course = session.query(Course).options(
+            joinedload(Course.teacher),
+            joinedload(Course.enrollments)
+        ).filter_by(id=cid, center_id=center_id).first()
+        if not course:
+            session.close()
+            return
+        
+        # Calculate slots left
+        accepted = sum(1 for e in course.enrollments if e.status == 'accepted')
+        slots_left = (course.max_students or 15) - accepted
+        
+        teacher_info = ""
+        if course.teacher:
+            t = course.teacher
+            teacher_info += f"👨‍🏫 <b>O'qituvchi:</b> {t.full_name}\n"
+            if t.qualification:
+                teacher_info += f"🏆 <b>Darajasi:</b> {t.qualification}\n"
+            if t.experience:
+                teacher_info += f"📖 <b>Ma'lumot/Tajriba:</b> {t.experience}\n"
+        else:
+            teacher_info += "👨‍🏫 <b>O'qituvchi:</b> Tayinlanmagan\n"
+            
+        text = (
+            f"📘 <b>Guruh:</b> {course.title}\n"
+            f"📂 <b>Yo'nalish:</b> {course.category}\n"
+            f"📅 <b>Kunlari:</b> {course.days.replace(',', ', ') if course.days else '—'}\n"
+            f"⏰ <b>Dars vaqti:</b> {course.schedule_time}\n"
+            f"👥 <b>Bo'sh joylar:</b> {slots_left} ta\n\n"
+            f"{teacher_info}"
+        )
+        
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            types.InlineKeyboardButton("✍️ Guruhga arizani topshirish", callback_data=f"enroll_{course.id}"),
+            types.InlineKeyboardButton("🔙 Orqaga", callback_data=f"section_{course.category}")
+        )
+        
+        photo_sent = False
+        if course.teacher and course.teacher.photo_path:
+            local_path = course.teacher.photo_path.lstrip('/')
+            abs_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), local_path)
+            if os.path.exists(abs_path):
+                try:
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                    with open(abs_path, 'rb') as photo:
+                        bot.send_photo(call.message.chat.id, photo, caption=text, reply_markup=markup, parse_mode="HTML")
+                    photo_sent = True
+                except Exception as e:
+                    print("Failed to send teacher photo:", e)
+        
+        if not photo_sent:
+            try:
+                bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="HTML")
+            except Exception:
+                try:
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                except Exception:
+                    pass
+                bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="HTML")
+        session.close()
 
     @bot.callback_query_handler(func=lambda call: call.data == "back_cats")
     def back_to_cats(call):
@@ -131,6 +206,10 @@ def make_bot(token, center_id):
                 bot.edit_message_text("📭 Hozircha kurs bo'limlari mavjud emas.",
                     call.message.chat.id, call.message.message_id)
             except Exception:
+                try:
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                except Exception:
+                    pass
                 bot.send_message(call.message.chat.id, "📭 Hozircha kurs bo'limlari mavjud emas.")
             return
         markup = types.InlineKeyboardMarkup(row_width=1)
@@ -140,6 +219,10 @@ def make_bot(token, center_id):
             bot.edit_message_text("📚 Quyidagi bo'limlardan birini tanlang:",
                 call.message.chat.id, call.message.message_id, reply_markup=markup)
         except Exception:
+            try:
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+            except Exception:
+                pass
             bot.send_message(call.message.chat.id, "📚 Quyidagi bo'limlardan birini tanlang:",
                 reply_markup=markup)
 

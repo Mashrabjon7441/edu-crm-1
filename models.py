@@ -10,6 +10,7 @@ class Center(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     telegram_bot_token = Column(String(255), nullable=True)
+    bot_username = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Category(Base):
@@ -44,6 +45,8 @@ class Teacher(Base, UserMixin):
     password_hash = Column(String(255), nullable=True)
     role = Column(String(50), default='teacher')
     center_id = Column(Integer, ForeignKey('centers.id'), nullable=True)
+    experience = Column(String(1000), nullable=True)
+    photo_path = Column(String(255), nullable=True)
 
     center = relationship('Center', backref='teachers')
     courses = relationship('Course', back_populates='teacher')
