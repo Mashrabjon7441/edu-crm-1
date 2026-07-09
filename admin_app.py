@@ -20,10 +20,21 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 from db_setup import Session, engine
 
 try:
+    from init_db import init_db
+    init_db()
+    print("Database initialization completed successfully.")
+except Exception as e:
+    import traceback
+    print("Database initialization failed:")
+    traceback.print_exc()
+
+try:
     import migrate_teacher_fields
     migrate_teacher_fields.add_columns()
 except Exception as e:
-    print("Migration failed:", e)
+    import traceback
+    print("Migration failed:")
+    traceback.print_exc()
 
 # Bot Setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
