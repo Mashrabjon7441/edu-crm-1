@@ -1,172 +1,421 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="uz" data-bs-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AdminSchool - Boshqaruv Paneli{% endblock %}</title>
     <script>
-        // Prevent theme flicker
         (function () {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-bs-theme', savedTheme);
         })();
     </script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
-            --bg-color: #f8f9fc;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --nav-bg: #ffffff;
-            --muted-text: #6c757d;
-            --border-color: #dee2e6;
+            --bg-body: #12131e;
+            --bg-surface: #1a1b2b;
+            --bg-card: #202237;
+            --bg-card-hover: #262942;
+            --primary-purple: #6c5ce7;
+            --primary-glow: rgba(108, 92, 231, 0.4);
+            --accent-pink: #ff5e97;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.07);
+            --sidebar-width: 250px;
         }
 
-        [data-bs-theme="dark"] {
-            --bg-color: #1a1c23;
-            --card-bg: #24262d;
-            --text-color: #e1e1e1;
-            --nav-bg: #24262d;
-            --muted-text: #9e9e9e;
-            --border-color: #3f414a;
+        [data-bs-theme="light"] {
+            --bg-body: #f4f5f9;
+            --bg-surface: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8fafc;
+            --primary-purple: #6c5ce7;
+            --primary-glow: rgba(108, 92, 231, 0.2);
+            --accent-pink: #ff5e97;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: rgba(0, 0, 0, 0.08);
         }
 
-        [data-bs-theme="dark"] .form-control,
-        [data-bs-theme="dark"] .form-select {
-            background-color: #2d303a;
-            border-color: #3f414a;
-            color: #ffffff;
-        }
-
-        [data-bs-theme="dark"] .form-control:focus {
-            background-color: #2d303a;
-            color: #ffffff;
-        }
-
-        [data-bs-theme="dark"] .modal-header {
-            border-bottom-color: var(--border-color);
-        }
-
-        [data-bs-theme="dark"] .modal-footer {
-            border-top-color: var(--border-color);
-        }
-
-        [data-bs-theme="dark"] .table-light,
-        [data-bs-theme="dark"] .table-light th,
-        [data-bs-theme="dark"] .table-light td {
-            background-color: #2d303a !important;
-            color: #ffffff !important;
-            border-color: #3f414a !important;
-        }
-
-        [data-bs-theme="dark"] .bg-light {
-            background-color: #2d303a !important;
-            color: #ffffff !important;
-        }
-
-        [data-bs-theme="dark"] .text-dark {
-            color: #ffffff !important;
-        }
-
-        [data-bs-theme="dark"] .modal-header {
-            border-bottom-color: var(--border-color);
-        }
-
-        [data-bs-theme="dark"] .modal-footer {
-            border-top-color: var(--border-color);
-        }
-
-        [data-bs-theme="dark"] .breadcrumb-item+.breadcrumb-item::before {
-            color: var(--muted-text);
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
         }
 
-        .navbar {
-            background: var(--nav-bg) !important;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        /* App Wrapper */
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .app-sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1040;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            text-decoration: none;
+            color: var(--text-primary);
         }
 
-        .nav-link {
-            color: var(--text-color) !important;
-        }
-
-        .nav-link:hover {
-            color: #4e73df !important;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
+        .sidebar-logo {
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        }
-
-        .modal-content {
-            background-color: var(--card-bg);
-            color: var(--text-color);
-        }
-
-        .table {
-            color: var(--text-color);
-        }
-
-        .table-light {
-            background-color: var(--bg-color);
-        }
-
-        .btn-primary {
-            background-color: #4e73df;
-            border: none;
-        }
-
-        #themeToggle {
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.3s;
-            color: var(--text-color);
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
 
-        #themeToggle:hover {
-            background: rgba(0, 0, 0, 0.1);
+        .brand-text h5 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
         }
 
-        /* Mobile Optimization */
-        @media (max-width: 768px) {
-            body {
-                font-size: 0.9rem;
-            }
+        .brand-text span {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            display: block;
+        }
 
-            .navbar-brand {
-                font-size: 1.2rem;
-            }
+        .user-profile-badge {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
 
-            .table {
-                font-size: 0.85rem;
-            }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #ff7675;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            overflow: hidden;
+        }
 
-            .card {
-                padding: 1rem !important;
-                margin-bottom: 1rem;
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0;
+        }
+
+        .user-role {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin: 1rem 0 0.5rem 0.5rem;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link i {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-card-hover);
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, var(--primary-purple), #818cf8);
+            color: #ffffff !important;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .sidebar-link .badge-count {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+        }
+
+        /* Main Content Wrapper */
+        .app-main {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding: 1.5rem 2rem;
+        }
+
+        /* Top Header */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .header-search {
+            position: relative;
+            width: 320px;
+        }
+
+        .header-search input {
+            width: 100%;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 9px 18px 9px 42px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .header-search input:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .header-search i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .icon-btn:hover {
+            background-color: var(--bg-card-hover);
+            color: var(--primary-purple);
+        }
+
+        .icon-btn .badge-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background-color: var(--primary-purple);
+            color: #fff;
+            font-size: 0.65rem;
+            padding: 2px 5px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .lang-dropdown {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        /* Custom Cards */
+        .card-custom {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, var(--primary-purple), #818cf8);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            transition: all 0.2s ease;
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--primary-glow);
+            color: #ffffff;
+        }
+
+        .btn-pink {
+            background: linear-gradient(135deg, var(--accent-pink), #ff7675);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            box-shadow: 0 4px 15px rgba(255, 94, 151, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .btn-pink:hover {
+            transform: translateY(-2px);
+            color: #ffffff;
+        }
+
+        /* Tables dark styling */
+        .table-dark-custom {
+            --bs-table-bg: transparent;
+            --bs-table-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        .table-dark-custom th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+        }
+
+        .table-dark-custom td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 16px;
+            vertical-align: middle;
+        }
+
+        .table-dark-custom tbody tr:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        /* Responsive Mobile Sidebar */
+        @media (max-width: 991px) {
+            .app-sidebar {
+                transform: translateX(-100%);
+            }
+            .app-sidebar.show {
+                transform: translateX(0);
+            }
+            .app-main {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .header-search {
+                width: 180px;
             }
         }
     </style>
+
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         const socket = io();
@@ -182,137 +431,233 @@
         });
         {% endif %}
 
-        // Theme Toggle Logic
         function setTheme(theme) {
             document.documentElement.setAttribute('data-bs-theme', theme);
             localStorage.setItem('theme', theme);
             const icon = document.querySelector('#themeToggle i');
-            if (theme === 'dark') {
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                icon.classList.replace('fa-sun', 'fa-moon');
+            if (icon) {
+                if (theme === 'dark') {
+                    icon.classList.replace('fa-moon', 'fa-sun');
+                } else {
+                    icon.classList.replace('fa-sun', 'fa-moon');
+                }
             }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             setTheme(savedTheme);
 
-            document.getElementById('themeToggle').addEventListener('click', () => {
-                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-                setTheme(currentTheme === 'dark' ? 'light' : 'dark');
-            });
+            const toggleBtn = document.getElementById('themeToggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+                });
+            }
+            
+            const mobileMenuBtn = document.getElementById('mobileSidebarToggle');
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    document.querySelector('.app-sidebar').classList.toggle('show');
+                });
+            }
         });
     </script>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg sticky-top mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold text-primary" href="/"><i class="fas fa-graduation-cap me-2"></i>Edu CRM</a>
-
-            <div class="d-flex align-items-center ms-auto me-2">
-                <div id="themeToggle" title="Rejimni almashtirish">
-                    <i class="fas fa-moon"></i>
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation (Rasmga mos modern yon menyu) -->
+        <aside class="app-sidebar">
+            <a href="/" class="sidebar-brand">
+                <div class="sidebar-logo">AS</div>
+                <div class="brand-text">
+                    <h5>AdminSchool</h5>
+                    <span>School Admission CRM</span>
                 </div>
-            </div>
+            </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
             {% if current_user.is_authenticated %}
-            <div class="collapse navbar-collapse" id="mainNavbar">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    {% if current_user.role == 'superadmin' %}
-                    <li class="nav-item">
-                        <a class="nav-link fw-bold text-primary" href="{{ url_for('superadmin_dashboard') }}">
-                            <i class="fas fa-user-shield me-1"></i> Super Admin Panel
-                        </a>
-                    </li>
-                    {% elif current_user.role == 'director' %}
-                    <li class="nav-item">
-                        <a class="nav-link fw-bold" href="{{ url_for('director_dashboard') }}">
-                            <i class="fas fa-chart-line me-1"></i> Director Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manager_dashboard') }}">
-                            <i class="fas fa-tasks me-1"></i> Manager Boshqaruv
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
-                            <i class="fas fa-users me-1 text-success"></i> O'quvchilar & To'lovlar
-                        </a>
-                    </li>
-                    {% elif current_user.role == 'manager' %}
-                    <li class="nav-item">
-                        <a class="nav-link fw-bold" href="{{ url_for('manager_dashboard') }}">
-                            <i class="fas fa-tasks me-1"></i> Boshqaruv
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
-                            <i class="fas fa-users me-1 text-success"></i> O'quvchilar & To'lovlar
-                        </a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">
-                            <i class="fas fa-home me-1"></i> Bosh sahifa
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-                <div class="d-flex align-items-center">
-                    <span class="me-3 small text-muted d-none d-lg-inline">Salom, <b class="text-capitalize">{{
-                            current_user.username }}</b> ({{ current_user.role }})</span>
-                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Chiqish</a>
+            <div class="user-profile-badge">
+                <div class="user-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="user-info">
+                    <h6 class="user-name">{{ current_user.username }}</h6>
+                    <span class="user-role text-capitalize">{{ current_user.role }}</span>
                 </div>
             </div>
             {% endif %}
-        </div>
-    </nav>
 
-    <div class="container-fluid px-3 px-md-4">
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        {% for message in messages %}
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+            <div class="nav-section-title">Main Menu</div>
+            <ul class="sidebar-menu">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'superadmin' %}
+                    <li>
+                        <a href="{{ url_for('superadmin_dashboard') }}" class="sidebar-link active">
+                            <i class="fas fa-th-large"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#centersSection" class="sidebar-link">
+                            <i class="fas fa-university"></i>
+                            <span>Markazlar</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#directorsSection" class="sidebar-link">
+                            <i class="fas fa-user-tie"></i>
+                            <span>Direktorlar</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#hiddenAdminPanel" class="sidebar-link" data-bs-toggle="collapse">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Statistika</span>
+                        </a>
+                    </li>
+                    {% elif current_user.role == 'director' %}
+                    <li>
+                        <a href="{{ url_for('director_dashboard') }}" class="sidebar-link active">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Director Panel</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('manager_dashboard') }}" class="sidebar-link">
+                            <i class="fas fa-tasks"></i>
+                            <span>Menejerlar</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
+                            <i class="fas fa-user-graduate"></i>
+                            <span>O'quvchilar</span>
+                        </a>
+                    </li>
+                    {% elif current_user.role == 'manager' %}
+                    <li>
+                        <a href="{{ url_for('manager_dashboard') }}" class="sidebar-link active">
+                            <i class="fas fa-tasks"></i>
+                            <span>Manager Panel</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
+                            <i class="fas fa-user-graduate"></i>
+                            <span>O'quvchilar & To'lov</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a href="{{ url_for('index') }}" class="sidebar-link active">
+                            <i class="fas fa-home"></i>
+                            <span>Bosh Sahifa</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
 
-        {% block content %}{% endblock %}
+            <div class="nav-section-title">Others</div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#allStudentsModal">
+                        <i class="fas fa-wallet"></i>
+                        <span>To'lovlar</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="sidebar-link">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Sozlamalar</span>
+                    </a>
+                </li>
+                {% if current_user.is_authenticated %}
+                <li>
+                    <a href="{{ url_for('logout') }}" class="sidebar-link text-danger">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Chiqish</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Top Header Bar -->
+            <header class="app-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="icon-btn d-lg-none" id="mobileSidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="header-search d-none d-sm-block">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Qidirish (Markaz, Direktor, Arizalar)..." id="topSearchInput">
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <div class="icon-btn" id="themeToggle" title="Mavzuni o'zgartirish">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                    <div class="icon-btn" title="Xabarlar">
+                        <i class="fas fa-comment-alt"></i>
+                        <span class="badge-dot">4</span>
+                    </div>
+                    <div class="icon-btn" title="Bildirishnomalar">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge-dot">3</span>
+                    </div>
+                    <div class="lang-dropdown d-none d-md-flex">
+                        <span>UZBEK</span>
+                        <i class="fas fa-chevron-down opacity-50" style="font-size: 0.7rem;"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Flashed Messages -->
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-info alert-dismissible fade show border-0 rounded-4 shadow-sm" role="alert" style="background: rgba(108, 92, 231, 0.2); color: #fff;">
+                <i class="fas fa-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Page Specific Content -->
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
     <!-- O'quvchilar Modal (Global) -->
     <div class="modal fade" id="allStudentsModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content shadow border-0">
-                <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="fw-bold mb-0"><i class="fas fa-user-graduate me-2"></i> Barcha O'quvchilar & To'lovlar
-                    </h5>
+            <div class="modal-content card-custom border-0 p-0">
+                <div class="modal-header border-bottom border-secondary border-opacity-25 p-4">
+                    <h5 class="fw-bold mb-0 text-white"><i class="fas fa-user-graduate me-2 text-primary"></i> Barcha O'quvchilar & To'lovlar</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <!-- Qidiruv -->
-                    <div class="p-3 border-bottom bg-light">
-                        <input type="text" id="globalStudentSearch" class="form-control"
+                    <div class="p-3 border-bottom border-secondary border-opacity-25 bg-dark bg-opacity-25">
+                        <input type="text" id="globalStudentSearch" class="form-control bg-dark border-secondary text-white rounded-pill px-4"
                             placeholder="🔍 Ism yoki familiya bo'yicha qidirish...">
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="globalStudentsTable">
-                            <thead class="table-light small sticky-top">
+                        <table class="table table-dark-custom align-middle mb-0" id="globalStudentsTable">
+                            <thead>
                                 <tr>
-                                    <th class="ps-3">O'quvchi</th>
+                                    <th class="ps-4">O'quvchi</th>
                                     <th>Guruh</th>
                                     <th class="d-none d-md-table-cell">Telefon</th>
                                     <th>To'lov</th>
-                                    <th class="text-end pe-3">Amal</th>
+                                    <th class="text-end pe-4">Amal</th>
                                 </tr>
                             </thead>
                             <tbody id="globalStudentsBody">
@@ -331,7 +676,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // O'quvchilar modalini yuklash
         document.getElementById('allStudentsModal').addEventListener('show.bs.modal', function () {
             fetch('/api/students')
                 .then(r => r.json())
@@ -347,11 +691,11 @@
                         if (s.days_left < 0) { cls = 'danger'; txt = `Qarzdor (${Math.abs(s.days_left)} kun)`; }
                         else if (s.days_left <= 5) { cls = 'warning text-dark'; txt = `Oz qoldi (${s.days_left} kun)`; }
                         tbody.innerHTML += `<tr>
-                            <td class="ps-3"><div class="fw-bold">${s.full_name}</div><small class="text-muted d-md-none">${s.phone}</small></td>
-                            <td><span class="badge bg-light text-dark border">${s.course}</span></td>
-                            <td class="d-none d-md-table-cell"><a href="tel:${s.phone}" class="text-decoration-none text-primary small">${s.phone}</a></td>
+                            <td class="ps-4"><div class="fw-bold text-white">${s.full_name}</div><small class="text-muted d-md-none">${s.phone}</small></td>
+                            <td><span class="badge bg-secondary bg-opacity-25 text-white border border-secondary">${s.course}</span></td>
+                            <td class="d-none d-md-table-cell"><a href="tel:${s.phone}" class="text-decoration-none text-info small">${s.phone}</a></td>
                             <td><span class="badge bg-${cls} small">${txt}</span></td>
-                            <td class="text-end pe-3">
+                            <td class="text-end pe-4">
                                 <a href="/manager/enrollment/pay/${s.id}" class="btn btn-sm btn-outline-success me-1" title="To'lovni tasdiqlash"><i class="fas fa-check"></i></a>
                                 <a href="/manager/enrollment/delete/${s.id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('O\\'chirilsinmi?')" title="O'chirish"><i class="fas fa-trash"></i></a>
                             </td>
@@ -360,7 +704,6 @@
                 });
         });
 
-        // Real-time qidiruv
         document.getElementById('globalStudentSearch').addEventListener('keyup', function () {
             const filter = this.value.toUpperCase();
             document.querySelectorAll('#globalStudentsTable tbody tr').forEach(row => {

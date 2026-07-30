@@ -1025,9 +1025,13 @@ import threading
 
 APP_URL = os.getenv('APP_URL', '').strip()
 if not APP_URL:
+    railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '').strip() or os.getenv('RAILWAY_STATIC_URL', '').strip()
+    if railway_domain:
+        APP_URL = f"https://{railway_domain}" if not railway_domain.startswith('http') else railway_domain
+if not APP_URL:
     APP_URL = os.getenv('RENDER_EXTERNAL_URL', '').strip()
 
-if APP_URL and (APP_URL.startswith('https://') or 'onrender.com' in APP_URL):
+if APP_URL and (APP_URL.startswith('https://') or 'railway' in APP_URL or 'onrender.com' in APP_URL):
     # PRODUCTION — use webhooks (thread so gunicorn doesn't timeout during startup)
     try:
         from bot import init_webhooks, send_payment_reminders
